@@ -53,17 +53,24 @@ class Food(models.Model):
     sodium_grams_min = models.FloatField(default=0)
     sodium_grams_max = models.FloatField(default=0)
 
+    @staticmethod
+    def all_properties() -> list[str]:
+        list_of_fields = [field.name for field in Food._meta.get_fields()]
+        for field in ["id", "name", "meal"]:
+            list_of_fields.remove(field)
+        return list_of_fields
+
     def __str__(self):
         return self.name + " (" + str(self.calories_min) + " - " + str(self.calories_max) + " calories)"
 
 
 class MealTypes(models.TextChoices):
-    BREAKFAST = "Breakfast"
-    LUNCH = "Lunch"
-    DINNER = "Dinner"
-    SNACK = "Snack"
-    OTHER = "Other"
-    NA = "N/A"
+    BREAKFAST = "breakfast"
+    LUNCH = "lunch"
+    DINNER = "dinner"
+    SNACK = "snack"
+    OTHER = "other"
+    NA = "n/a"
 
 class Meal(models.Model):
     """
@@ -80,7 +87,7 @@ class Meal(models.Model):
     )
     date = models.DateField()
     time = models.TimeField()
-    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+    # user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name + " (" + str(self.date) + " " + str(self.time) + ")"

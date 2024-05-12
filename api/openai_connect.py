@@ -5,6 +5,8 @@ from openai import OpenAIError
 from bs4 import BeautifulSoup
 import requests
 
+from api.models import Food
+
 # get api key from .env
 open_ai_key = os.getenv("OPENAI_API_KEY")
 
@@ -14,7 +16,7 @@ class OpenAIModels(Enum):
     GPT_4_TURBO = "gpt-4-turbo"
 
 
-class OpenAIConnect():
+class OpenAIConnect:
     def __init__(
             self,
             system_prompt="",
@@ -28,15 +30,24 @@ class OpenAIConnect():
         self.client = OpenAI()
         self.client.api_key = open_ai_key
         if not json_format:
-            json_format = {"response": "your response here"}
+            json_format = {
+                "response": "your response here",
+                "meal_name":"your meal name here",
+                "property1": "value1",
+                "property2": "value2",
+                "... etc": "..."
+            }
         self.json_format = json_format
+        self.properties: list[str] = Food.all_properties()
 
         if not system_prompt:
             system_prompt = f"""
             You are a nutritionist who is helping a client track their food intake.
             You are an expert at looking at a photo or description of a meal and determining the nutritional content.
-            Please respond in json format: {self.json_format}
+            Please respond in json format: {self.json_format}. 
+            Include the following information: {self.properties}
             """
+        # print(self.properties)
         self.system_prompt = system_prompt
         self.temperature = temperature
         self.max_tokens = max_tokens
@@ -89,6 +100,3 @@ class OpenAIConnect():
         prompt += text
 
         return self.get_response(prompt)
-
-
-
