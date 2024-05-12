@@ -1,14 +1,14 @@
-from datetime import datetime
-
 from rest_framework.exceptions import APIException
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from dataclasses import dataclass
 from api.openai_connect import OpenAIConnect
-from api.models import MealTypes, Food
+from api.models import MealTypes, Food, Meal
 import json
+from datetime import datetime
 
-from api.serializers import FoodSerializer
+
+from api.serializers import FoodSerializer, MealSerializer
 
 
 class InvalidMealType(APIException):
@@ -40,16 +40,18 @@ class GetTextResponse(APIView):
     def post(request):
         description = request.data.get("description")
         meal_type = request.data.get("meal_type")
-        date = request.data.get("date")
+        date_str = request.data.get("date")
         meal_name = request.data.get("meal_name")
+        date = None
 
-
-        # validate date
-        if date:
+        # DATE STUFF
+        if date_str:
             try:
-                datetime.strptime(date, "%Y-%m-%d")
+                date = datetime.strptime(date_str, "%Y-%m-%d")
             except ValueError:
                 raise ErrorMessage("Invalid date format. Please use YYYY-MM-DD format.")
+        else:
+            date = datetime.now()
 
         if meal_type.lower() not in MealTypes.values:
             raise InvalidMealType()
@@ -60,10 +62,19 @@ class GetTextResponse(APIView):
         response = json.loads(response)
         response["meal_name"] = meal_name if meal_name else response["meal_name"]
         # serialize into database
+
         food_serializer = FoodSerializer(data=response)
         if food_serializer.is_valid():
-            food_serializer.save()
+            food = food_serializer.save()
         else:
             raise ErrorMessage("Error saving food data to database")
+
+        # find and save meal
+        # get food from db
+
+        meal, created = Meal.objects.get_or_create(meal_type=meal_type, date=date)
+        meal.meal_items.add(food)
+        meal.save()
+        print(meal)
 
         return Response(response)

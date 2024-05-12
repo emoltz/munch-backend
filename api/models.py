@@ -85,12 +85,47 @@ class Meal(models.Model):
         choices=MealTypes.choices,
         default=MealTypes.NA
     )
-    date = models.DateField()
-    time = models.TimeField()
+    date = models.DateField(auto_now_add=True)
+
+    # If someone doesn't log, we can guess based on old info what this meal's calories are
+    assumed_total_min_calories = models.FloatField(default=0, blank=True, null=True)
+    assumed_total_max_calories = models.FloatField(default=0, blank=True, null=True)
+
+    assumed_total_min_protein = models.FloatField(default=0, blank=True, null=True)
+    assumed_total_max_protein = models.FloatField(default=0, blank=True, null=True)
+
+    assumed_total_min_total_fat = models.FloatField(default=0, blank=True, null=True)
+    assumed_total_max_total_fat = models.FloatField(default=0, blank=True, null=True)
+
+    assumed_total_min_saturated_fat = models.FloatField(default=0, blank=True, null=True)
+    assumed_total_max_saturated_fat = models.FloatField(default=0, blank=True, null=True)
+
+    assumed_total_min_carbohydrates = models.FloatField(default=0, blank=True, null=True)
+    assumed_total_max_carbohydrates = models.FloatField(default=0, blank=True, null=True)
+
+    assumed_total_min_sugar = models.FloatField(default=0, blank=True, null=True)
+    assumed_total_max_sugar = models.FloatField(default=0, blank=True, null=True)
+
+    assumed_total_min_fiber = models.FloatField(default=0, blank=True, null=True)
+    assumed_total_max_fiber = models.FloatField(default=0, blank=True, null=True)
+
+    assumed_total_min_cholesterol = models.FloatField(default=0, blank=True, null=True)
+    assumed_total_max_cholesterol = models.FloatField(default=0, blank=True, null=True)
+
+    assumed_total_min_sodium_grams = models.FloatField(default=0, blank=True, null=True)
+    assumed_total_max_sodium_grams = models.FloatField(default=0, blank=True, null=True)
+
+
     # user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
 
+    class Meta:
+        unique_together = ["meal_type", "date"]
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return self.name + " (" + str(self.date) + " " + str(self.time) + ")"
+        return self.name + " (" + str(self.date) + " " + str(self.meal_type) +  ")"
 
     @property
     def total_min_calories(self):
