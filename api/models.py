@@ -94,3 +94,4 @@ class Meal(models.Model):
         return sum([meal_item.calories_max for meal_item in self.meal_items.all()])
 
     #... etc. for other nutritional info properties
+

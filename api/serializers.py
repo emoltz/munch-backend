@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Food, Meal, Day, UserProfile
+from .models import Food, Meal, UserProfile
 
 class FoodSerializer(serializers.ModelSerializer):
     class Meta:
@@ -11,7 +11,7 @@ class MealSerializer(serializers.ModelSerializer):
         model = Meal
         fields = '__all__'
 
-class DaySerializer(serializers.ModelSerializer):
+class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Day
+        model = UserProfile
         fields = '__all__'
