@@ -2,78 +2,95 @@ from django.db import models
 import uuid
 from django.contrib.auth.models import User
 
-class Food(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255, blank=True, null=True)
-    date = models.DateField(auto_now_add=True)
-    quantity = models.IntegerField()
-    calories = models.FloatField()
-    protein = models.FloatField()
-    sugars = models.FloatField()
-    food_description = models.TextField()
-
-    def __str__(self):
-        return self.name
-
-
-class Meal(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    food_items = models.ManyToManyField('Food', blank=True)  # Assuming 'Food' is already defined
-    name = models.CharField(max_length=255, default="New Meal")
-    date_created = models.DateTimeField(auto_now_add=True)
-    date_display = models.CharField(max_length=100)  # This could be generated dynamically in a property
-    image_name = models.CharField(max_length=255, default="defaultImage")
-    composite_description = models.TextField(blank=True)
-    user_description = models.TextField(blank=True)
-
-    @property
-    def total_calories(self):
-        return sum(food.calories for food in self.food_items.all())
-
-    @property
-    def total_protein(self):
-        return sum(food.protein for food in self.food_items.all())
-
-    @property
-    def total_sugars(self):
-        return sum(food.sugars for food in self.food_items.all())
-
-    def compile_composite_description(self):
-        self.composite_description = "The following is a description of the entire meal: "
-        for food in self.food_items.all():
-            self.composite_description += f"{food.food_description}\n"
-        self.save()
-
-
-class Day(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    date = models.DateField()
-    meals = models.ManyToManyField(Meal, blank=True)
-
-    @property
-    def total_calories(self):
-        return sum(meal.total_calories for meal in self.meals.all())
-
-    @property
-    def total_protein(self):
-        return sum(meal.total_protein for meal in self.meals.all())
-
-    @property
-    def total_sugars(self):
-        return sum(meal.total_sugars for meal in self.meals.all())
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    days = models.ManyToManyField(Day, blank=True)
+    # the user's height in centimeters
+    height = models.FloatField(default=0)
+    # the user's weight in kilograms
+    weight = models.FloatField(default=0)
+    # the user's age in years
+    age = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.user.username + "'s profile"
+
+
+class Food(models.Model):
+    """
+    A "food" is a portion or serving of a food or drink that is consumed at a meal or snack.
+    For example, a fish and rice dish, a cappuccino, or a slice of bread with butter would all constitute meal items.
+    The definition is purposely flexible so that users can track a wide variety of foods and drinks.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, default="")
+    # the system with nutritional info is on a *range* of values, so we need to store the min and max values
+    # all values are in grams
+    calories_min = models.FloatField(default=0)
+    calories_max = models.FloatField(default=0)
+
+    protein_min = models.FloatField(default=0)
+    protein_max = models.FloatField(default=0)
+
+    total_fat_min = models.FloatField(default=0)
+    total_fat_max = models.FloatField(default=0)
+
+    saturated_fat_min = models.FloatField(default=0)
+    saturated_fat_max = models.FloatField(default=0)
+
+    carbohydrates_min = models.FloatField(default=0)
+    carbohydrates_max = models.FloatField(default=0)
+
+    sugar_min = models.FloatField(default=0)
+    sugar_max = models.FloatField(default=0)
+
+    fiber_min = models.FloatField(default=0)
+    fiber_max = models.FloatField(default=0)
+
+    cholesterol_min = models.FloatField(default=0)
+    cholesterol_max = models.FloatField(default=0)
+
+    sodium_grams_min = models.FloatField(default=0)
+    sodium_grams_max = models.FloatField(default=0)
+
+    def __str__(self):
+        return self.name + " (" + str(self.calories_min) + " - " + str(self.calories_max) + " calories)"
+
+
+class MealTypes(models.TextChoices):
+    BREAKFAST = "Breakfast"
+    LUNCH = "Lunch"
+    DINNER = "Dinner"
+    SNACK = "Snack"
+    OTHER = "Other"
+    NA = "N/A"
+
+class Meal(models.Model):
+    """
+    A "meal" is a collection of meal items that are consumed at a specific time.
+    For example, a breakfast, lunch, or dinner would all be considered meals.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, default="")
+    meal_items = models.ManyToManyField(Food)
+    meal_type = models.CharField(
+        max_length=10,
+        choices=MealTypes.choices,
+        default=MealTypes.NA
+    )
+    date = models.DateField()
+    time = models.TimeField()
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.name + " (" + str(self.date) + " " + str(self.time) + ")"
 
     @property
-    def total_calories(self):
-        return sum(day.total_calories for day in self.days.all())
+    def total_min_calories(self):
+        return sum([meal_item.calories_min for meal_item in self.meal_items.all()])
 
     @property
-    def total_protein(self):
-        return sum(day.total_protein for day in self.days.all())
+    def total_max_calories(self):
+        return sum([meal_item.calories_max for meal_item in self.meal_items.all()])
 
-    @property
-    def total_sugars(self):
-        return sum(day.total_sugars for day in self.days.all())
+    #... etc. for other nutritional info properties

@@ -20,7 +20,7 @@ class OpenAIConnect():
             system_prompt="",
             temperature=0.5,
             max_tokens=500,
-            model: OpenAIModels = OpenAIModels.GPT_4_TURBO.value,
+            model: str = OpenAIModels.GPT_4_TURBO.value,
             json_object=True,
             json_format: str = None,
             timeout=20
@@ -55,7 +55,7 @@ class OpenAIConnect():
 
         try:
             response = self.client.chat.completions.create(
-                model=self.model.value,
+                model=self.model,
                 messages=messages,
                 temperature=self.temperature,
                 max_tokens=self.max_tokens,
