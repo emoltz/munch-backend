@@ -2,6 +2,8 @@ from enum import Enum
 import os
 from openai import OpenAI
 from openai import OpenAIError
+from bs4 import BeautifulSoup
+import requests
 
 # get api key from .env
 open_ai_key = os.getenv("OPENAI_API_KEY")
@@ -63,3 +65,30 @@ class OpenAIConnect():
             return response.choices[0].message.content
         except OpenAIError as e:
             raise ValueError("Error in OpenAIConnect.get_response: ", e)
+
+    @staticmethod
+    def get_recipe_details(url: str) -> str or None:
+        response = requests.get(url)
+        response.raise_for_status()
+
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # get text from all paragraphs
+        text = soup.find_all("p")
+        text = [t.get_text() for t in text]
+        text = " ".join(text)
+
+        return text
+
+    def summarize_recipe_content(self, text: str) -> str or None:
+        prompt = """
+        Please summarize just the relevant recipe information from the text below. 
+        Turn it into one paragraph of information you can use for a recipe database.
+        \n
+        """
+        prompt += text
+
+        return self.get_response(prompt)
+
+
+
