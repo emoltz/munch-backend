@@ -7,7 +7,6 @@ from api.models import MealTypes, Food, Meal
 import json
 from datetime import datetime
 
-
 from api.serializers import FoodSerializer, MealSerializer
 
 
@@ -25,7 +24,6 @@ class ErrorMessage(APIException):
 
 
 class GetTextResponse(APIView):
-
     @dataclass
     class RequestArgs:
         """
@@ -42,7 +40,6 @@ class GetTextResponse(APIView):
         meal_type = request.data.get("meal_type")
         date_str = request.data.get("date")
         meal_name = request.data.get("meal_name")
-        date = None
 
         # DATE STUFF
         if date_str:
