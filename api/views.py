@@ -61,11 +61,14 @@ class GetTextResponse(APIView):
         sodium_grams_min: float
         sodium_grams_max: float
 
-    def post(self,request):
+    @staticmethod
+    def post(request):
         description = request.data.get("description")
         meal_type = request.data.get("meal_type")
         date_str = request.data.get("date")
         meal_name = request.data.get("meal_name")
+
+        # specific params for response
         json_format = """
             {
                 "response": "your response here. Provide a brief explanation of why you did what you did and any breakdowns of the meal..",
@@ -76,6 +79,7 @@ class GetTextResponse(APIView):
                 "... etc": "..."
             }
         """
+        temperature = 0.2
 
         # DATE STUFF
         if date_str:
@@ -90,7 +94,7 @@ class GetTextResponse(APIView):
             raise InvalidMealType()
 
 
-        openai_connect = OpenAIConnect(json_format=json_format)
+        openai_connect = OpenAIConnect(temperature=temperature, json_format=json_format)
         response = openai_connect.get_response(description)
 
         response = json.loads(response)

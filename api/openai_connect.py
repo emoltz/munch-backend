@@ -24,7 +24,6 @@ class OpenAIConnect:
             temperature=0.5,
             max_tokens=500,
             model: str = OpenAIModels.GPT_4o.value,
-            json_object=True,
             json_format: str = None,
             timeout=20
     ):
@@ -51,17 +50,23 @@ class OpenAIConnect:
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.model = model
-        self.json_object = json_object
         self.timeout = timeout
 
-    def get_response(self, prompt: str, system_prompt: str = None) -> str or None:
+    def get_response(self, prompt: str, previous_messages: list[str] = None, system_prompt: str = None) -> str or None:
         if not system_prompt:
             system_prompt = self.system_prompt
 
         messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt},
         ]
+
+        # add context if there are previous messages
+        if previous_messages:
+            for message in previous_messages:
+                messages.append({"role": "user", "content": message})
+
+        # attach latest message
+        messages.append({"role": "user", "content": prompt})
 
         try:
             response = self.client.chat.completions.create(
