@@ -34,6 +34,33 @@ class GetTextResponse(APIView):
         date: str or None  # YYYY-MM-DD "2024-05-12"
         meal_name: str or None
 
+    @dataclass
+    class ResponseArgs:
+        """
+        For reference only. Not used in the code.
+        """
+        response: str
+        follow_up: str
+        meal_name: str
+        calories_min: float
+        calories_max: float
+        protein_min: float
+        protein_max: float
+        total_fat_min: float
+        total_fat_max: float
+        saturated_fat_min: float
+        saturated_fat_max: float
+        carbohydrates_min: float
+        carbohydrates_max: float
+        sugar_min: float
+        sugar_max: float
+        fiber_min: float
+        fiber_max: float
+        cholesterol_min: float
+        cholesterol_max: float
+        sodium_grams_min: float
+        sodium_grams_max: float
+
     @staticmethod
     def post(request):
         description = request.data.get("description")
