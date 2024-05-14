@@ -68,7 +68,7 @@ class GetTextResponse(APIView):
         meal_name = request.data.get("meal_name")
         json_format = """
             {
-                "response": "your response here. Provide a brief explanation of why you did what you did.",
+                "response": "your response here. Provide a brief explanation of why you did what you did and any breakdowns of the meal..",
                 "follow_up": "Ask a follow up question that would narrow the scope of the response",
                 "meal_name":"your meal name here",
                 "property1": "value1",
