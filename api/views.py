@@ -1,7 +1,7 @@
 from rest_framework.exceptions import APIException
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from api.openai_connect import OpenAIConnect
 from api.models import MealTypes, Food, Meal
 import json
@@ -61,12 +61,21 @@ class GetTextResponse(APIView):
         sodium_grams_min: float
         sodium_grams_max: float
 
-    @staticmethod
-    def post(request):
+    def post(self,request):
         description = request.data.get("description")
         meal_type = request.data.get("meal_type")
         date_str = request.data.get("date")
         meal_name = request.data.get("meal_name")
+        json_format = """
+            {
+                "response": "your response here. Provide a brief explanation of why you did what you did.",
+                "follow_up": "Ask a follow up question that would narrow the scope of the response",
+                "meal_name":"your meal name here",
+                "property1": "value1",
+                "property2": "value2",
+                "... etc": "..."
+            }
+        """
 
         # DATE STUFF
         if date_str:
@@ -80,7 +89,8 @@ class GetTextResponse(APIView):
         if meal_type.lower() not in MealTypes.values:
             raise InvalidMealType()
 
-        openai_connect = OpenAIConnect()
+
+        openai_connect = OpenAIConnect(json_format=json_format)
         response = openai_connect.get_response(description)
 
         response = json.loads(response)
