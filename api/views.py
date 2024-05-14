@@ -25,7 +25,7 @@ class ErrorMessage(APIException):
 
 class GetTextResponse(APIView):
     @dataclass
-    class RequestArgs:
+    class RequestType:
         """
         For reference only. Not used in the code.
         """
@@ -35,7 +35,7 @@ class GetTextResponse(APIView):
         meal_name: str or None
 
     @dataclass
-    class ResponseArgs:
+    class ResponseType:
         """
         For reference only. Not used in the code.
         """
