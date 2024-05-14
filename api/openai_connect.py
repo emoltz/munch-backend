@@ -12,6 +12,7 @@ open_ai_key = os.getenv("OPENAI_API_KEY")
 
 
 class OpenAIModels(Enum):
+    GPT_4o = "gpt-4o"
     GPT_4 = "gpt-4"
     GPT_4_TURBO = "gpt-4-turbo"
 
@@ -22,7 +23,7 @@ class OpenAIConnect:
             system_prompt="",
             temperature=0.5,
             max_tokens=500,
-            model: str = OpenAIModels.GPT_4_TURBO.value,
+            model: str = OpenAIModels.GPT_4o.value,
             json_object=True,
             json_format: str = None,
             timeout=20

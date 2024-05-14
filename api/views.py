@@ -69,9 +69,9 @@ class GetTextResponse(APIView):
         # find and save meal
         # get food from db
 
-        meal, created = Meal.objects.get_or_create(meal_type=meal_type, date=date)
-        meal.meal_items.add(food)
-        meal.save()
-        print(meal)
+        # meal, created = Meal.objects.get_or_create(meal_type=meal_type, date=date)
+        # meal.meal_items.add(food)
+        # meal.save()
+        # print(meal)
 
         return Response(response)
