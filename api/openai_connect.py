@@ -32,7 +32,8 @@ class OpenAIConnect:
         self.client.api_key = open_ai_key
         if not json_format:
             json_format = {
-                "response": "your response here",
+                "response": "your response here. Provide a brief explanation of why you did what you did.",
+                "follow_up": "Ask a follow up question that would narrow the scope of the response",
                 "meal_name":"your meal name here",
                 "property1": "value1",
                 "property2": "value2",
