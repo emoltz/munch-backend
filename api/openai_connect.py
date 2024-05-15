@@ -10,8 +10,6 @@ from api.models import Food
 # get api key from .env
 load_dotenv()
 open_ai_key = os.getenv("OPENAI_API_KEY")
-print("key: ", open_ai_key)
-
 
 class OpenAIModels(Enum):
     GPT_4o = "gpt-4o"
