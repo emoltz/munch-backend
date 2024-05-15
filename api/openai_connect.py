@@ -29,8 +29,7 @@ class OpenAIConnect:
             json_format: str = None,
             timeout=20
     ):
-        self.client = OpenAI()
-        self.client.api_key = open_ai_key
+        self.client = OpenAI(api_key=open_ai_key)
         if not json_format:
             json_format = """
             {
@@ -64,8 +63,13 @@ class OpenAIConnect:
 
         # add context if there are previous messages
         if previous_messages:
-            for message in previous_messages:
-                messages.append({"role": "user", "content": message})
+            for i, message in enumerate(previous_messages):
+                # TODO alternate for assistant
+                # assuming it begins with user message
+                if i % 2 == 0 or i == 0:
+                    messages.append({"role": "user", "content": message})
+                else:
+                    messages.append({"role": "assistant", "content": message})
 
         # attach latest message
         messages.append({"role": "user", "content": prompt})
