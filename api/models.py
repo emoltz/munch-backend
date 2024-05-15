@@ -1,6 +1,8 @@
 from django.db import models
 import uuid
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 class UserProfile(models.Model):
@@ -14,6 +16,7 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username + "'s profile"
+
 
 
 class Food(models.Model):
@@ -146,3 +149,15 @@ class Conversation(models.Model):
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     sender = models.CharField(max_length=100, null=False, blank=False, choices=[("user", "user"), ("bot", "bot")])
+
+
+# ----------------------
+# SIGNALS TO CREATE USER PROFILE
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.userprofile.save()
