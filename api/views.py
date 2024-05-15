@@ -10,15 +10,6 @@ from datetime import datetime
 
 from api.serializers import FoodSerializer, MealSerializer
 
-# AUTH
-
-class AuthView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        content = {'message': 'Hello, World!'}
-        return Response(content)
-
 class InvalidMealType(APIException):
     status_code = 400
     default_detail = "Invalid meal type"
@@ -33,6 +24,8 @@ class ErrorMessage(APIException):
 
 
 class GetTextResponse(APIView):
+    permission_classes = [IsAuthenticated]
+
     @dataclass
     class RequestType:
         """
@@ -72,12 +65,13 @@ class GetTextResponse(APIView):
 
     @staticmethod
     def post(request):
+        user = request.user
         description = request.data.get("description")
         meal_type = request.data.get("meal_type")
         date_str = request.data.get("date")
         meal_name = request.data.get("meal_name")
 
-        temperature = 0.2
+        temperature = 0.1
 
         json_format = """
             {
@@ -110,8 +104,6 @@ class GetTextResponse(APIView):
         if meal_type.lower() not in MealTypes.values:
             raise InvalidMealType()
 
-
-
         response = openai_connect.get_response(description)
 
         response = json.loads(response)
@@ -125,8 +117,9 @@ class GetTextResponse(APIView):
             raise ErrorMessage("Error saving food data to database")
 
         # find and save meal
-        # get food from db
 
+
+        # TODO make this work
         # meal, created = Meal.objects.get_or_create(meal_type=meal_type, date=date)
         # meal.meal_items.add(food)
         # meal.save()

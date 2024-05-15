@@ -81,6 +81,7 @@ class Meal(models.Model):
     For example, a breakfast, lunch, or dinner would all be considered meals.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, null=False, blank=False)
     name = models.CharField(max_length=255, default="")
     meal_items = models.ManyToManyField(Food)
     meal_type = models.CharField(
@@ -89,8 +90,6 @@ class Meal(models.Model):
         default=MealTypes.NA
     )
     date = models.DateField(auto_now_add=True)
-    # TODO add user field
-    # user = models.ForeignKey(UserProfile, on_delete=models.CASCADE)
 
     # If someone doesn't log, we can guess based on old info what this meal's calories are
     assumed_total_min_calories = models.FloatField(default=0, blank=True, null=True)
@@ -145,7 +144,6 @@ class Conversation(models.Model):
     """
     record_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     meal = models.ForeignKey(Meal, on_delete=models.CASCADE) # this operates as a conversation id
-    # TODO add user field ? Or can I just use the meal field?
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     sender = models.CharField(max_length=100, null=False, blank=False, choices=[("user", "user"), ("bot", "bot")])
