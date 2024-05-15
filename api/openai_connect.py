@@ -41,13 +41,12 @@ class OpenAIConnect:
 
         if not system_prompt:
             system_prompt = f"""
-            You are a nutritionist who is helping a client track their food intake.
-            You are an expert at looking at a photo or description of a meal and determining the nutritional content.
             Please respond in json format: {self.json_format}. 
-            Include the following information: {self.properties}
             """
-        # print(self.properties)
+        else:
+            system_prompt += f"\n Please respond in json format: {self.json_format}. "
         self.system_prompt = system_prompt
+
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.model = model

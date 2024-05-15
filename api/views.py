@@ -77,7 +77,8 @@ class GetTextResponse(APIView):
         date_str = request.data.get("date")
         meal_name = request.data.get("meal_name")
 
-        # specific params for response
+        temperature = 0.2
+
         json_format = """
             {
                 "response": "your response here. Provide a brief explanation of why you did what you did and any breakdowns of the meal..",
@@ -88,7 +89,14 @@ class GetTextResponse(APIView):
                 "... etc": "..."
             }
         """
-        temperature = 0.2
+        system_prompt = f"""
+            You are a nutritionist who is helping a client track their food intake.
+            You are an expert at looking at a photo or description of a meal and determining the nutritional content.
+            
+            """
+        openai_connect = OpenAIConnect(system_prompt=system_prompt, temperature=temperature, json_format=json_format)
+        system_prompt += f"Include the following information: {openai_connect.properties}"
+        # specific params for response
 
         # DATE STUFF
         if date_str:
@@ -103,7 +111,7 @@ class GetTextResponse(APIView):
             raise InvalidMealType()
 
 
-        openai_connect = OpenAIConnect(temperature=temperature, json_format=json_format)
+
         response = openai_connect.get_response(description)
 
         response = json.loads(response)
