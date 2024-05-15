@@ -86,10 +86,11 @@ class GetTextResponse(APIView):
         system_prompt = f"""
             You are a nutritionist who is helping a client track their food intake.
             You are an expert at looking at a photo or description of a meal and determining the nutritional content.
-            
+            Use these properties: {Food.all_properties()}
             """
         openai_connect = OpenAIConnect(system_prompt=system_prompt, temperature=temperature, json_format=json_format)
-        system_prompt += f"Include the following information: {openai_connect.properties}"
+
+
         # specific params for response
 
         # DATE STUFF

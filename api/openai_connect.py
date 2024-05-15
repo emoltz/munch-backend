@@ -35,7 +35,7 @@ class OpenAIConnect:
             }
             """
         self.json_format = json_format
-        self.properties: list[str] = Food.all_properties()
+
 
         if not system_prompt:
             system_prompt = f"""
