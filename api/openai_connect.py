@@ -4,11 +4,13 @@ from openai import OpenAI
 from openai import OpenAIError
 from bs4 import BeautifulSoup
 import requests
-
+from dotenv import load_dotenv
 from api.models import Food
 
 # get api key from .env
+load_dotenv()
 open_ai_key = os.getenv("OPENAI_API_KEY")
+print("key: ", open_ai_key)
 
 
 class OpenAIModels(Enum):
