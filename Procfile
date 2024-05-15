@@ -1,0 +1,1 @@
+web: gunicorn food_tracker_backend.wsgi
