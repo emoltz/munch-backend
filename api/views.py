@@ -63,11 +63,26 @@ class GetTextResponse(APIView):
         sodium_grams_min: float
         sodium_grams_max: float
 
+
     @staticmethod
-    def post(request):
+    def add_food_to_meal(user, food: Food, meal_type: str, date: str, meal_name=None) -> Meal:
+        print("user: ", user)
+        print("meal_type: ", meal_type)
+        print("date: ", date)
+
+        meal, created = Meal.objects.get_or_create(meal_type=meal_type, date=date, user=user)
+        meal.meal_items.add(food)
+        meal.save()
+        return meal
+
+    def post(self, request):
         user = request.user
         description = request.data.get("description")
         meal_type = request.data.get("meal_type")
+        meal_type = meal_type.lower() if meal_type else None
+        if not meal_type:
+            raise ErrorMessage("Please provide a meal type")
+
         date_str = request.data.get("date")
         meal_name = request.data.get("meal_name")
 
@@ -94,6 +109,7 @@ class GetTextResponse(APIView):
         # specific params for response
 
         # DATE STUFF
+        # TODO remove all this logic and just check for correct formatting
         if date_str:
             try:
                 date = datetime.strptime(date_str, "%Y-%m-%d")
@@ -101,6 +117,9 @@ class GetTextResponse(APIView):
                 raise ErrorMessage("Invalid date format. Please use YYYY-MM-DD format.")
         else:
             date = datetime.now()
+
+        # convert date to string
+        date_str: str = str(date.strftime("%Y-%m-%d"))
 
         if meal_type.lower() not in MealTypes.values:
             raise InvalidMealType()
@@ -120,10 +139,6 @@ class GetTextResponse(APIView):
         # find and save meal
 
 
-        # TODO make this work
-        # meal, created = Meal.objects.get_or_create(meal_type=meal_type, date=date)
-        # meal.meal_items.add(food)
-        # meal.save()
-        # print(meal)
+        self.add_food_to_meal(user, food, meal_type, date_str, meal_name)
 
         return Response(response)

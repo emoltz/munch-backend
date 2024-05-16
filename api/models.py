@@ -81,7 +81,7 @@ class Meal(models.Model):
     For example, a breakfast, lunch, or dinner would all be considered meals.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, null=False, blank=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=False, blank=False)
     name = models.CharField(max_length=255, default="")
     meal_items = models.ManyToManyField(Food)
     meal_type = models.CharField(
@@ -89,7 +89,7 @@ class Meal(models.Model):
         choices=MealTypes.choices,
         default=MealTypes.NA
     )
-    date = models.DateField(auto_now_add=True)
+    date = models.CharField(max_length=10, blank=False, null=False) # YYYY-MM-DD "2024-05-12"
 
     # If someone doesn't log, we can guess based on old info what this meal's calories are
     assumed_total_min_calories = models.FloatField(default=0, blank=True, null=True)
@@ -120,7 +120,7 @@ class Meal(models.Model):
     assumed_total_max_sodium_grams = models.FloatField(default=0, blank=True, null=True)
 
     class Meta:
-        unique_together = ["meal_type", "date"]
+        unique_together = ["meal_type", "date", "user"]
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
