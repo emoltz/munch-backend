@@ -65,12 +65,10 @@ class GetTextResponse(APIView):
 
     @staticmethod
     def add_food_to_meal(user, food: Food, meal_type: str, date: str, meal_name=None) -> Meal:
-        print("user: ", user)
-        print("meal_type: ", meal_type)
-        print("date: ", date)
-
         meal, created = Meal.objects.get_or_create(meal_type=meal_type, date=date, user=user)
         meal.meal_items.add(food)
+        if meal_name:
+            meal.name = meal_name
         meal.save()
         return meal
 
@@ -115,7 +113,6 @@ class GetTextResponse(APIView):
             """
         openai_connect = OpenAIConnect(system_prompt=system_prompt, temperature=temperature, json_format=json_format)
 
-
         # specific params for response
         if meal_type.lower() not in MealTypes.values:
             raise InvalidMealType()
@@ -131,9 +128,6 @@ class GetTextResponse(APIView):
             food = food_serializer.save()
         else:
             raise ErrorMessage("Error saving food data to database")
-
-        # find and save meal
-
 
         self.add_food_to_meal(user, food, meal_type, date_str, meal_name)
 
