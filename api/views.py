@@ -101,6 +101,9 @@ class GetTextResponse(APIView):
         system_prompt = f"""
             You are a nutritionist who is helping a client track their food intake.
             You are an expert at looking at a photo or description of a meal and determining the nutritional content.
+            Because we can't be exact in our estimates, we are providing a minimum and maximum range for each property. 
+            The goal is for these values to be as close as possible, but accuracy is the most important, so don't worry too much about the range.
+            In order to maximize the accuracy of the estimates, subtract 10% from the minimum and add 10% to the maximum.
             Use these properties: {Food.all_properties()}
             """
         openai_connect = OpenAIConnect(system_prompt=system_prompt, temperature=temperature, json_format=json_format)
