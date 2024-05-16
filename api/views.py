@@ -17,10 +17,9 @@ class InvalidMealType(APIException):
 
 
 class ErrorMessage(APIException):
-    def __init__(self, message):
-        self.status_code = 400
-        self.default_detail = message
-        self.default_code = 'error'
+    status_code = 400
+    default_detail = "Error processing request."
+    default_code = 'error'
 
 
 class GetTextResponse(APIView):
@@ -84,6 +83,14 @@ class GetTextResponse(APIView):
             raise ErrorMessage("Please provide a meal type")
 
         date_str = request.data.get("date")
+        if not date_str:
+            raise ErrorMessage("Please provide a date")
+        else:
+            try:
+                datetime.strptime(date_str, "%Y-%m-%d")
+            except ValueError:
+                raise ErrorMessage("Invalid date format. Please use YYYY-MM-DD format.")
+
         meal_name = request.data.get("meal_name")
 
         temperature = 0.1
@@ -110,20 +117,6 @@ class GetTextResponse(APIView):
 
 
         # specific params for response
-
-        # DATE STUFF
-        # TODO remove all this logic and just check for correct formatting
-        if date_str:
-            try:
-                date = datetime.strptime(date_str, "%Y-%m-%d")
-            except ValueError:
-                raise ErrorMessage("Invalid date format. Please use YYYY-MM-DD format.")
-        else:
-            date = datetime.now()
-
-        # convert date to string
-        date_str: str = str(date.strftime("%Y-%m-%d"))
-
         if meal_type.lower() not in MealTypes.values:
             raise InvalidMealType()
 
