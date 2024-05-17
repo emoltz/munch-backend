@@ -10,15 +10,6 @@ from datetime import datetime
 
 from api.serializers import FoodSerializer, MealSerializer
 
-# AUTH
-
-class AuthView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        content = {'message': 'Hello, World!'}
-        return Response(content)
-
 class InvalidMealType(APIException):
     status_code = 400
     default_detail = "Invalid meal type"
@@ -26,13 +17,14 @@ class InvalidMealType(APIException):
 
 
 class ErrorMessage(APIException):
-    def __init__(self, message):
-        self.status_code = 400
-        self.default_detail = message
-        self.default_code = 'error'
+    status_code = 400
+    default_detail = "Error processing request."
+    default_code = 'error'
 
 
 class GetTextResponse(APIView):
+    permission_classes = [IsAuthenticated]
+
     @dataclass
     class RequestType:
         """
@@ -41,7 +33,7 @@ class GetTextResponse(APIView):
         description: str
         meal_type: str
         date: str or None  # YYYY-MM-DD "2024-05-12"
-        meal_name: str or None
+        name: str or None
 
     @dataclass
     class ResponseType:
@@ -70,44 +62,65 @@ class GetTextResponse(APIView):
         sodium_grams_min: float
         sodium_grams_max: float
 
+
     @staticmethod
-    def post(request):
+    def add_food_to_meal(user, food: Food, meal_type: str, date: str, meal_name=None) -> Meal:
+        meal, created = Meal.objects.get_or_create(meal_type=meal_type, date=date, user=user)
+        meal.meal_items.add(food)
+        if meal_name:
+            meal.name = meal_name
+        meal.save()
+        return meal
+
+    def post(self, request):
+        user = request.user
         description = request.data.get("description")
         meal_type = request.data.get("meal_type")
-        date_str = request.data.get("date")
-        meal_name = request.data.get("meal_name")
+        meal_type = meal_type.lower() if meal_type else None
+        if not meal_type:
+            raise ErrorMessage("Please provide a meal type")
 
-        # specific params for response
+        date_str = request.data.get("date")
+        if not date_str:
+            raise ErrorMessage("Please provide a date")
+        else:
+            try:
+                datetime.strptime(date_str, "%Y-%m-%d")
+            except ValueError:
+                raise ErrorMessage("Invalid date format. Please use YYYY-MM-DD format.")
+
+        name = request.data.get("name")
+
+        temperature = 0.1
+
         json_format = """
             {
                 "response": "your response here. Provide a brief explanation of why you did what you did and any breakdowns of the meal..",
                 "follow_up": "Ask a follow up question that would narrow the scope of the response",
-                "meal_name":"your meal name here",
+                "name":"your meal name here",
                 "property1": "value1",
                 "property2": "value2",
                 "... etc": "..."
             }
         """
-        temperature = 0.2
+        system_prompt = f"""
+            You are a nutritionist who is helping a client track their food intake.
+            You are an expert at looking at a photo or description of a meal and determining the nutritional content.
+            Because we can't be exact in our estimates, we are providing a minimum and maximum range for each property. 
+            The goal is for these values to be as close as possible, but accuracy is the most important, so don't worry too much about the range.
+            In order to maximize the accuracy of the estimates, subtract 10% from the minimum and add 10% to the maximum.
+            Use these properties: {Food.all_properties()}
+            """
+        openai_connect = OpenAIConnect(system_prompt=system_prompt, temperature=temperature, json_format=json_format)
 
-        # DATE STUFF
-        if date_str:
-            try:
-                date = datetime.strptime(date_str, "%Y-%m-%d")
-            except ValueError:
-                raise ErrorMessage("Invalid date format. Please use YYYY-MM-DD format.")
-        else:
-            date = datetime.now()
-
+        # specific params for response
         if meal_type.lower() not in MealTypes.values:
             raise InvalidMealType()
 
-
-        openai_connect = OpenAIConnect(temperature=temperature, json_format=json_format)
         response = openai_connect.get_response(description)
 
         response = json.loads(response)
-        response["meal_name"] = meal_name if meal_name else response["meal_name"]
+        response["name"] = name if name else response["name"]
         # serialize into database
 
         food_serializer = FoodSerializer(data=response)
@@ -116,12 +129,121 @@ class GetTextResponse(APIView):
         else:
             raise ErrorMessage("Error saving food data to database")
 
-        # find and save meal
-        # get food from db
-
-        # meal, created = Meal.objects.get_or_create(meal_type=meal_type, date=date)
-        # meal.meal_items.add(food)
-        # meal.save()
-        # print(meal)
+        self.add_food_to_meal(user, food, meal_type, date_str, name)
 
         return Response(response)
+
+
+class GetFoodDetails(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @staticmethod
+    def get(request):
+        # return Food[] serialized
+        all_food = Food.objects.all()
+        food_serializer = FoodSerializer(all_food, many=True)
+        return Response(food_serializer.data)
+
+    @staticmethod
+    def post(request):
+        food_id = request.data.get("food_id")
+        if not food_id:
+            raise ErrorMessage("Please provide a food id")
+
+        food = Food.objects.get(id=food_id)
+        if not food:
+            raise ErrorMessage("No food found with that id")
+
+        food_serializer = FoodSerializer(food)
+        return Response(food_serializer.data)
+class GetMealsAndDetails(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @staticmethod
+    def get(request):
+        # return Meal[] serialized
+        user = request.user
+        all_meals = Meal.objects.filter(user=user)
+        meal_serializer = MealSerializer(all_meals, many=True)
+        return Response(meal_serializer.data)
+
+
+    @staticmethod
+    def post(request):
+        user = request.user
+        meal = request.data.get("meal_id")
+        if not meal:
+            raise ErrorMessage("Please provide a meal id")
+
+        # get meal from db
+        meal = Meal.objects.get(id=meal)
+        if not meal:
+            raise ErrorMessage("No meal found with that id for this user")
+
+        # get all foods in meal_items
+        meal_items = meal.meal_items.all()
+
+        # now sum all properties
+        # calories (min and max)
+        total_min_calories = sum([food.calories_min for food in meal_items])
+        total_max_calories = sum([food.calories_max for food in meal_items])
+
+        # protein
+        total_min_protein = sum([food.protein_min for food in meal_items])
+        total_max_protein = sum([food.protein_max for food in meal_items])
+
+        # total fat
+        total_min_fat = sum([food.total_fat_min for food in meal_items])
+        total_max_fat = sum([food.total_fat_max for food in meal_items])
+
+        # saturated fat
+        total_min_sat_fat = sum([food.saturated_fat_min for food in meal_items])
+        total_max_sat_fat = sum([food.saturated_fat_max for food in meal_items])
+
+        # carbohydrates
+        total_min_carbs = sum([food.carbohydrates_min for food in meal_items])
+        total_max_carbs = sum([food.carbohydrates_max for food in meal_items])
+
+        # sugar
+        total_min_sugar = sum([food.sugar_min for food in meal_items])
+        total_max_sugar = sum([food.sugar_max for food in meal_items])
+
+        # fiber
+        total_min_fiber = sum([food.fiber_min for food in meal_items])
+        total_max_fiber = sum([food.fiber_max for food in meal_items])
+
+        # cholesterol
+        total_min_cholesterol = sum([food.cholesterol_min for food in meal_items])
+        total_max_cholesterol = sum([food.cholesterol_max for food in meal_items])
+
+        # sodium_grams
+        total_min_sodium_grams = sum([food.sodium_grams_min for food in meal_items])
+        total_max_sodium_grams = sum([food.sodium_grams_max for food in meal_items])
+
+        # now return the totals
+        response = {
+            "meal_name": meal.name,
+            "total_min_calories": total_min_calories,
+            "total_max_calories": total_max_calories,
+            "total_min_protein": total_min_protein,
+            "total_max_protein": total_max_protein,
+            "total_min_fat": total_min_fat,
+            "total_max_fat": total_max_fat,
+            "total_min_sat_fat": total_min_sat_fat,
+            "total_max_sat_fat": total_max_sat_fat,
+            "total_min_carbs": total_min_carbs,
+            "total_max_carbs": total_max_carbs,
+            "total_min_sugar": total_min_sugar,
+            "total_max_sugar": total_max_sugar,
+            "total_min_fiber": total_min_fiber,
+            "total_max_fiber": total_max_fiber,
+            "total_min_cholesterol": total_min_cholesterol,
+            "total_max_cholesterol": total_max_cholesterol,
+            "total_min_sodium_grams": total_min_sodium_grams,
+            "total_max_sodium_grams": total_max_sodium_grams
+        }
+        return Response(response)
+
+
+
+

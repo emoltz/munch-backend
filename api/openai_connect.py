@@ -10,8 +10,6 @@ from api.models import Food
 # get api key from .env
 load_dotenv()
 open_ai_key = os.getenv("OPENAI_API_KEY")
-print("key: ", open_ai_key)
-
 
 class OpenAIModels(Enum):
     GPT_4o = "gpt-4o"
@@ -29,8 +27,7 @@ class OpenAIConnect:
             json_format: str = None,
             timeout=20
     ):
-        self.client = OpenAI()
-        self.client.api_key = open_ai_key
+        self.client = OpenAI(api_key=open_ai_key)
         if not json_format:
             json_format = """
             {
@@ -38,17 +35,16 @@ class OpenAIConnect:
             }
             """
         self.json_format = json_format
-        self.properties: list[str] = Food.all_properties()
+
 
         if not system_prompt:
             system_prompt = f"""
-            You are a nutritionist who is helping a client track their food intake.
-            You are an expert at looking at a photo or description of a meal and determining the nutritional content.
             Please respond in json format: {self.json_format}. 
-            Include the following information: {self.properties}
             """
-        # print(self.properties)
+        else:
+            system_prompt += f"\n Please respond in json format: {self.json_format}. "
         self.system_prompt = system_prompt
+
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.model = model
@@ -64,8 +60,13 @@ class OpenAIConnect:
 
         # add context if there are previous messages
         if previous_messages:
-            for message in previous_messages:
-                messages.append({"role": "user", "content": message})
+            for i, message in enumerate(previous_messages):
+                # TODO alternate for assistant
+                # assuming it begins with user message
+                if i % 2 == 0 or i == 0:
+                    messages.append({"role": "user", "content": message})
+                else:
+                    messages.append({"role": "assistant", "content": message})
 
         # attach latest message
         messages.append({"role": "user", "content": prompt})
