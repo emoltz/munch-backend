@@ -10,6 +10,12 @@ from datetime import datetime
 
 from api.serializers import FoodSerializer, MealSerializer
 
+
+class Test(APIView):
+    @staticmethod
+    def get(request):
+        return Response({"message": "Hello, World!"})
+
 class InvalidMealType(APIException):
     status_code = 400
     default_detail = "Invalid meal type"

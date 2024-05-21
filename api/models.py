@@ -91,33 +91,77 @@ class Meal(models.Model):
     )
     date = models.CharField(max_length=10, blank=False, null=False) # YYYY-MM-DD "2024-05-12"
 
-    # If someone doesn't log, we can guess based on old info what this meal's calories are
-    # assumed_total_min_calories = models.FloatField(default=0, blank=True, null=True)
-    # assumed_total_max_calories = models.FloatField(default=0, blank=True, null=True)
-    #
-    # assumed_total_min_protein = models.FloatField(default=0, blank=True, null=True)
-    # assumed_total_max_protein = models.FloatField(default=0, blank=True, null=True)
-    #
-    # assumed_total_min_total_fat = models.FloatField(default=0, blank=True, null=True)
-    # assumed_total_max_total_fat = models.FloatField(default=0, blank=True, null=True)
-    #
-    # assumed_total_min_saturated_fat = models.FloatField(default=0, blank=True, null=True)
-    # assumed_total_max_saturated_fat = models.FloatField(default=0, blank=True, null=True)
-    #
-    # assumed_total_min_carbohydrates = models.FloatField(default=0, blank=True, null=True)
-    # assumed_total_max_carbohydrates = models.FloatField(default=0, blank=True, null=True)
-    #
-    # assumed_total_min_sugar = models.FloatField(default=0, blank=True, null=True)
-    # assumed_total_max_sugar = models.FloatField(default=0, blank=True, null=True)
-    #
-    # assumed_total_min_fiber = models.FloatField(default=0, blank=True, null=True)
-    # assumed_total_max_fiber = models.FloatField(default=0, blank=True, null=True)
-    #
-    # assumed_total_min_cholesterol = models.FloatField(default=0, blank=True, null=True)
-    # assumed_total_max_cholesterol = models.FloatField(default=0, blank=True, null=True)
-    #
-    # assumed_total_min_sodium_grams = models.FloatField(default=0, blank=True, null=True)
-    # assumed_total_max_sodium_grams = models.FloatField(default=0, blank=True, null=True)
+    @property
+    def total_min_calories(self):
+        return sum([meal_item.calories_min for meal_item in self.meal_items.all()])
+
+    @property
+    def total_max_calories(self):
+        return sum([meal_item.calories_max for meal_item in self.meal_items.all()])
+
+    @property
+    def total_min_protein(self):
+        return sum([meal_item.protein_min for meal_item in self.meal_items.all()])
+
+    @property
+    def total_max_protein(self):
+        return sum([meal_item.protein_max for meal_item in self.meal_items.all()])
+
+    @property
+    def total_min_total_fat(self):
+        return sum([meal_item.total_fat_min for meal_item in self.meal_items.all()])
+
+    @property
+    def total_max_total_fat(self):
+        return sum([meal_item.total_fat_max for meal_item in self.meal_items.all()])
+
+    @property
+    def total_min_saturated_fat(self):
+        return sum([meal_item.saturated_fat_min for meal_item in self.meal_items.all()])
+
+    @property
+    def total_max_saturated_fat(self):
+        return sum([meal_item.saturated_fat_max for meal_item in self.meal_items.all()])
+
+    @property
+    def total_min_carbohydrates(self):
+        return sum([meal_item.carbohydrates_min for meal_item in self.meal_items.all()])
+
+    @property
+    def total_max_carbohydrates(self):
+        return sum([meal_item.carbohydrates_max for meal_item in self.meal_items.all()])
+
+    @property
+    def total_min_sugar(self):
+        return sum([meal_item.sugar_min for meal_item in self.meal_items.all()])
+
+    @property
+    def total_max_sugar(self):
+        return sum([meal_item.sugar_max for meal_item in self.meal_items.all()])
+
+    @property
+    def total_min_fiber(self):
+        return sum([meal_item.fiber_min for meal_item in self.meal_items.all()])
+
+    @property
+    def total_max_fiber(self):
+        return sum([meal_item.fiber_max for meal_item in self.meal_items.all()])
+
+    @property
+    def total_min_cholesterol(self):
+        return sum([meal_item.cholesterol_min for meal_item in self.meal_items.all()])
+
+    @property
+    def total_max_cholesterol(self):
+        return sum([meal_item.cholesterol_max for meal_item in self.meal_items.all()])
+
+    @property
+    def total_min_sodium_grams(self):
+        return sum([meal_item.sodium_grams_min for meal_item in self.meal_items.all()])
+
+    @property
+    def total_max_sodium_grams(self):
+        return sum([meal_item.sodium_grams_max for meal_item in self.meal_items.all()])
 
     class Meta:
         unique_together = ["meal_type", "date", "user"]
@@ -128,13 +172,7 @@ class Meal(models.Model):
     def __str__(self):
         return self.name + " (" + str(self.date) + " " + str(self.meal_type) +  ")"
 
-    @property
-    def total_min_calories(self):
-        return sum([meal_item.calories_min for meal_item in self.meal_items.all()])
 
-    @property
-    def total_max_calories(self):
-        return sum([meal_item.calories_max for meal_item in self.meal_items.all()])
 
     #... etc. for other nutritional info properties
 
