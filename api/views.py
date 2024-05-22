@@ -137,6 +137,9 @@ class GetTextResponse(APIView):
 
         self.add_food_to_meal(user, food, meal_type, date_str, name)
 
+        # before returning, add the db id to the response json
+        response["db_id"] = food.id
+
         return Response(response)
 
 
