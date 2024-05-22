@@ -1,4 +1,4 @@
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, ParseError, NotFound
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,6 +9,12 @@ import json
 from datetime import datetime
 
 from api.serializers import FoodSerializer, MealSerializer
+
+
+class Test(APIView):
+    @staticmethod
+    def get(request):
+        return Response({"message": "Hello, World!"})
 
 class InvalidMealType(APIException):
     status_code = 400
@@ -137,25 +143,18 @@ class GetTextResponse(APIView):
 class GetFoodDetails(APIView):
     permission_classes = [IsAuthenticated]
 
-    @staticmethod
-    def get(request):
+    def get(self, request, *args, **kwargs):
         # return Food[] serialized
-        all_food = Food.objects.all()
-        food_serializer = FoodSerializer(all_food, many=True)
-        return Response(food_serializer.data)
-
-    @staticmethod
-    def post(request):
-        food_id = request.data.get("food_id")
+        food_id: str = self.kwargs.get('id')
         if not food_id:
-            raise ErrorMessage("Please provide a food id")
-
-        food = Food.objects.get(id=food_id)
-        if not food:
-            raise ErrorMessage("No food found with that id")
-
+            raise ParseError(detail="ID not provided")
+        try:
+            food = Food.objects.get(id=food_id)
+        except Food.DoesNotExist:
+            raise NotFound(detail="Food item not found")
         food_serializer = FoodSerializer(food)
         return Response(food_serializer.data)
+
 class GetMealsAndDetails(APIView):
     permission_classes = [IsAuthenticated]
 

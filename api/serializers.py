@@ -7,9 +7,82 @@ class FoodSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class MealSerializer(serializers.ModelSerializer):
+    total_min_calories = serializers.SerializerMethodField()
+    total_max_calories = serializers.SerializerMethodField()
+    total_min_protein = serializers.SerializerMethodField()
+    total_max_protein = serializers.SerializerMethodField()
+    total_min_total_fat = serializers.SerializerMethodField()
+    total_max_total_fat = serializers.SerializerMethodField()
+    total_min_saturated_fat = serializers.SerializerMethodField()
+    total_max_saturated_fat = serializers.SerializerMethodField()
+    total_min_carbohydrates = serializers.SerializerMethodField()
+    total_max_carbohydrates = serializers.SerializerMethodField()
+    total_min_sugar = serializers.SerializerMethodField()
+    total_max_sugar = serializers.SerializerMethodField()
+    total_min_fiber = serializers.SerializerMethodField()
+    total_max_fiber = serializers.SerializerMethodField()
+    total_min_cholesterol = serializers.SerializerMethodField()
+    total_max_cholesterol = serializers.SerializerMethodField()
+    total_min_sodium_grams = serializers.SerializerMethodField()
+    total_max_sodium_grams = serializers.SerializerMethodField()
+
     class Meta:
         model = Meal
         fields = '__all__'
+
+    def get_total_min_calories(self, obj):
+        return obj.total_min_calories
+
+    def get_total_max_calories(self, obj):
+        return obj.total_max_calories
+
+    def get_total_min_protein(self, obj):
+        return obj.total_min_protein
+
+    def get_total_max_protein(self, obj):
+        return obj.total_max_protein
+
+    def get_total_min_total_fat(self, obj):
+        return obj.total_min_total_fat
+
+    def get_total_max_total_fat(self, obj):
+        return obj.total_max_total_fat
+
+    def get_total_min_saturated_fat(self, obj):
+        return obj.total_min_saturated_fat
+
+    def get_total_max_saturated_fat(self, obj):
+        return obj.total_max_saturated_fat
+
+    def get_total_min_carbohydrates(self, obj):
+        return obj.total_min_carbohydrates
+
+    def get_total_max_carbohydrates(self, obj):
+        return obj.total_max_carbohydrates
+
+    def get_total_min_sugar(self, obj):
+        return obj.total_min_sugar
+
+    def get_total_max_sugar(self, obj):
+        return obj.total_max_sugar
+
+    def get_total_min_fiber(self, obj):
+        return obj.total_min_fiber
+
+    def get_total_max_fiber(self, obj):
+        return obj.total_max_fiber
+
+    def get_total_min_cholesterol(self, obj):
+        return obj.total_min_cholesterol
+
+    def get_total_max_cholesterol(self, obj):
+        return obj.total_max_cholesterol
+
+    def get_total_min_sodium_grams(self, obj):
+        return obj.total_min_sodium_grams
+
+    def get_total_max_sodium_grams(self, obj):
+        return obj.total_max_sodium_grams
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
