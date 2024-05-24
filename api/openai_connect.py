@@ -50,14 +50,18 @@ class OpenAIAssistant:
     OpenAI-Beta: assistants=v2
     """
 
-    def __init__(self, name: str, instructions: str, tools: List[Dict[str, str]] = None, model=OpenAIModels.GPT_4o.value):
-        self.client = OpenAI()
+    def __init__(self, name: str, instructions: str, tools: List[Dict[str, str]] = None, model=OpenAIModels.GPT_4o.value, thread_id: str = None):
+        self.client = OpenAI(api_key=open_ai_key)
 
         if tools is None:
             tools = [{"type": "code_interpreter"}]
 
         self.assistant = self.client.beta.assistants.create(name=name, instructions=instructions, tools=tools, model=model)
-        self.thread = self.client.beta.threads.create()
+        if not thread_id:
+            self.thread = self.client.beta.threads.create()
+        else:
+            self.thread = self.client.beta.threads.retrieve(thread_id)
+
         self.instructions = instructions
         self.model = model
 
