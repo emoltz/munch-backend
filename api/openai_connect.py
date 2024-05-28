@@ -1,10 +1,15 @@
 from enum import Enum
 import os
+from typing import List, Dict, override
+
 from openai import OpenAI
 from openai import OpenAIError
 from bs4 import BeautifulSoup
 import requests
 from dotenv import load_dotenv
+from openai.lib.streaming import AssistantEventHandler
+from openai.types.beta import Thread
+
 from api.models import Food
 
 # get api key from .env
@@ -15,6 +20,75 @@ class OpenAIModels(Enum):
     GPT_4o = "gpt-4o"
     GPT_4 = "gpt-4"
     GPT_4_TURBO = "gpt-4-turbo"
+
+class EventHandler(AssistantEventHandler):
+        @override
+        def on_text_created(self, text) -> None:
+            print(f"\nassistant > {text}", end="", flush=True)
+
+        @override
+        def on_text_delta(self, delta, snapshot):
+            print(delta.value, end="", flush=True)
+
+        def on_tool_call_created(self, tool_call):
+            print(f"\nassistant > {tool_call.type}\n", flush=True)
+
+        def on_tool_call_delta(self, delta, snapshot):
+            if delta.type == "code_interpreter":
+                if delta.code_interpreter.input:
+                    print(delta.code_interpreter.input, end="", flush=True)
+                if delta.code_interpreter.outputs:
+                    print(f"\n\noutput >", flush=True)
+                    for output in delta.code_interpreter.outputs:
+                        if output.type == "logs":
+                            print(f"\n{output.logs}", flush=True)
+
+
+class OpenAIAssistant:
+    """
+    Calls to Assistants API required a beta HTTP header
+    OpenAI-Beta: assistants=v2
+    """
+
+    def __init__(self, name: str, instructions: str, tools: List[Dict[str, str]] = None, model=OpenAIModels.GPT_4o.value, thread_id: str = None):
+        self.client = OpenAI(api_key=open_ai_key)
+
+        if tools is None:
+            tools = [{"type": "code_interpreter"}]
+
+        self.assistant = self.client.beta.assistants.create(name=name, instructions=instructions, tools=tools, model=model)
+        if not thread_id:
+            self.thread = self.client.beta.threads.create()
+        else:
+            self.thread = self.client.beta.threads.retrieve(thread_id)
+
+        self.instructions = instructions
+        self.model = model
+
+    def add_message_to_thread(self, thread: Thread, content: str):
+        return self.client.beta.threads.messages.create(thread_id=thread.id, role="user", content=content)
+
+    def get_current_thread(self) -> Thread:
+        return self.thread
+
+    def make_new_thread(self) -> Thread:
+        self.thread = self.client.beta.threads.create()
+        return self.thread
+
+    def run_stream(self):
+        """
+        Then, we use the `stream` SDK helper
+            with the `EventHandler` class to create the Run
+            and stream the response.
+        """
+        event_handler = EventHandler()
+        with self.client.beta.threads.runs.stream(
+            thread_id=self.thread.id,
+            assistant_id=self.assistant.id,
+            instructions=self.instructions,
+            event_handler=event_handler,
+        ) as stream:
+            stream.until_done()
 
 
 class OpenAIConnect:

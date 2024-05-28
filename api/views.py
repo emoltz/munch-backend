@@ -10,12 +10,6 @@ from datetime import datetime
 
 from api.serializers import FoodSerializer, MealSerializer
 
-
-class Test(APIView):
-    @staticmethod
-    def get(request):
-        return Response({"message": "Hello, World!"})
-
 class InvalidMealType(APIException):
     status_code = 400
     default_detail = "Invalid meal type"
@@ -137,6 +131,9 @@ class GetTextResponse(APIView):
 
         self.add_food_to_meal(user, food, meal_type, date_str, name)
 
+        # before returning, add the db id to the response json
+        response["db_id"] = food.id
+
         return Response(response)
 
 
@@ -242,7 +239,5 @@ class GetMealsAndDetails(APIView):
             "total_max_sodium_grams": total_max_sodium_grams
         }
         return Response(response)
-
-
 
 

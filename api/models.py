@@ -186,6 +186,16 @@ class Conversation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     sender = models.CharField(max_length=100, null=False, blank=False, choices=[("user", "user"), ("bot", "bot")])
 
+# class CurrentThread(models.Model):
+#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+#     user = models.ForeignKey(User, on_delete=models.CASCADE, unique=False, null=False, blank=False)
+#     thread_id = models.CharField(max_length=100, null=False, blank=False)
+#     date_created = models.DateTimeField(auto_now_add=True)
+#
+#     @staticmethod
+#     def get_current_thread(user: User):
+#         # return latest thread
+#         return CurrentThread.objects.filter(user=user).last()
 
 # ----------------------
 # SIGNALS TO CREATE USER PROFILE
