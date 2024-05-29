@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 import os
 import environ
+import dj_database_url
 
 env = environ.Env(
     DEBUG=(bool, False)
@@ -102,6 +103,9 @@ DATABASES = {
         'PORT': env('POSTGRES_PORT', default='5432'),
     }
 }
+
+DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
