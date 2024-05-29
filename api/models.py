@@ -27,6 +27,7 @@ class Food(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, default="")
+    initial_description = models.TextField(blank=True, null=True)
     # the system with nutritional info is on a *range* of values, so we need to store the min and max values
     # all values are in grams
     calories_min = models.FloatField(default=0)
