@@ -16,7 +16,8 @@ import environ
 import dj_database_url
 
 env = environ.Env(
-    DEBUG=(bool, False)
+    DEBUG=(bool, False),
+    IS_HEROKU=(bool, False)
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -35,6 +36,7 @@ SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG')
+IS_HEROKU = env('IS_HEROKU')
 # DEBUG = True
 
 ALLOWED_HOSTS = ['*']
@@ -104,7 +106,8 @@ DATABASES = {
     }
 }
 
-# DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+if IS_HEROKU:
+    DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
 
 
 # Password validation
