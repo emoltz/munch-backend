@@ -89,6 +89,8 @@ class Meal(models.Model):
         choices=MealTypes.choices,
         default=MealTypes.NA
     )
+    description = models.TextField(blank=True, null=True)
+    most_recent_follow_up = models.CharField(max_length=255, blank=True, null=True)
     date = models.CharField(max_length=10, blank=False, null=False) # YYYY-MM-DD "2024-05-12"
 
     @property
