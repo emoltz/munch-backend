@@ -57,6 +57,9 @@ class Food(models.Model):
     sodium_grams_min = models.FloatField(default=0)
     sodium_grams_max = models.FloatField(default=0)
 
+    caffeine_min = models.FloatField(default=0)
+    caffeine_max = models.FloatField(default=0)
+
     @staticmethod
     def all_properties() -> list[str]:
         list_of_fields = [field.name for field in Food._meta.get_fields()]
@@ -165,6 +168,14 @@ class Meal(models.Model):
     @property
     def total_max_sodium_grams(self):
         return sum([meal_item.sodium_grams_max for meal_item in self.meal_items.all()])
+
+    @property
+    def total_min_caffeine(self):
+        return sum([meal_item.caffeine_min for meal_item in self.meal_items.all()])
+
+    @property
+    def total_max_caffeine(self):
+        return sum([meal_item.caffeine_max for meal_item in self.meal_items.all()])
 
     class Meta:
         unique_together = ["meal_type", "date", "user"]
