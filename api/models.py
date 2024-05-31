@@ -57,8 +57,8 @@ class Food(models.Model):
     sodium_grams_min = models.FloatField(default=0)
     sodium_grams_max = models.FloatField(default=0)
 
-    caffeine_min = models.FloatField(default=0)
-    caffeine_max = models.FloatField(default=0)
+    # caffeine_min = models.FloatField(default=0)
+    # caffeine_max = models.FloatField(default=0)
 
     @staticmethod
     def all_properties() -> list[str]:
