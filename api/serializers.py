@@ -25,6 +25,8 @@ class MealSerializer(serializers.ModelSerializer):
     total_max_cholesterol = serializers.SerializerMethodField()
     total_min_sodium_grams = serializers.SerializerMethodField()
     total_max_sodium_grams = serializers.SerializerMethodField()
+    # total_min_caffeine = serializers.SerializerMethodField()
+    # total_max_caffeine = serializers.SerializerMethodField()
 
     class Meta:
         model = Meal
@@ -83,6 +85,12 @@ class MealSerializer(serializers.ModelSerializer):
 
     def get_total_max_sodium_grams(self, obj):
         return obj.total_max_sodium_grams
+
+    # def get_total_min_caffeine(self, obj):
+    #     return obj.total_min_caffeine
+    #
+    # def get_total_max_caffeine(self, obj):
+    #     return obj.total_max_caffeine
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:

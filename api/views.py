@@ -126,8 +126,11 @@ class GetTextResponse(APIView):
         food_serializer = FoodSerializer(data=response)
         if food_serializer.is_valid():
             food = food_serializer.save()
+            food.initial_description = description
+            food.save()
         else:
             raise ErrorMessage("Error saving food data to database")
+
 
         self.add_food_to_meal(user, food, meal_type, date_str, name)
 

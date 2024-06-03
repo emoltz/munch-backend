@@ -27,6 +27,7 @@ class Food(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, default="")
+    initial_description = models.TextField(blank=True, null=True)
     # the system with nutritional info is on a *range* of values, so we need to store the min and max values
     # all values are in grams
     calories_min = models.FloatField(default=0)
@@ -55,6 +56,9 @@ class Food(models.Model):
 
     sodium_grams_min = models.FloatField(default=0)
     sodium_grams_max = models.FloatField(default=0)
+
+    # caffeine_min = models.FloatField(default=0)
+    # caffeine_max = models.FloatField(default=0)
 
     @staticmethod
     def all_properties() -> list[str]:
@@ -164,6 +168,14 @@ class Meal(models.Model):
     @property
     def total_max_sodium_grams(self):
         return sum([meal_item.sodium_grams_max for meal_item in self.meal_items.all()])
+
+    @property
+    def total_min_caffeine(self):
+        return sum([meal_item.caffeine_min for meal_item in self.meal_items.all()])
+
+    @property
+    def total_max_caffeine(self):
+        return sum([meal_item.caffeine_max for meal_item in self.meal_items.all()])
 
     class Meta:
         unique_together = ["meal_type", "date", "user"]
