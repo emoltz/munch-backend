@@ -1,14 +1,18 @@
+from django.contrib.auth.models import User
+from rest_framework import status
+from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import APIException, ParseError, NotFound
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from dataclasses import dataclass, asdict
 from api.openai_connect import OpenAIConnect
-from api.models import MealTypes, Food, Meal
+from api.models import MealTypes, Food, Meal, UserProfile
 import json
 from datetime import datetime
 
-from api.serializers import FoodSerializer, MealSerializer
+from api.serializers import FoodSerializer, MealSerializer, CreateUserSerializer
+
 
 class InvalidMealType(APIException):
     status_code = 400
@@ -22,7 +26,17 @@ class ErrorMessage(APIException):
     default_code = 'error'
 
 
-class GetTextResponse(APIView):
+class UserExists(APIView):
+    def get(self, request, *args, **kwargs):
+        user_id: str = self.kwargs.get('user_id')
+        if not user_id:
+            return Response({'message': 'Please provide a user_id'}, status=status.HTTP_400_BAD_REQUEST)
+        if User.objects.filter(username=user_id).exists():
+            return Response({'exists': True}, status=status.HTTP_200_OK)
+        return Response({'exists': False}, status=status.HTTP_404_NOT_FOUND)
+
+
+class LogFood(APIView):
     permission_classes = [IsAuthenticated]
 
     @dataclass
@@ -61,7 +75,6 @@ class GetTextResponse(APIView):
         cholesterol_max: float
         sodium_grams_min: float
         sodium_grams_max: float
-
 
     @staticmethod
     def add_food_to_meal(user, food: Food, meal_type: str, date: str, meal_name=None) -> Meal:
@@ -131,7 +144,6 @@ class GetTextResponse(APIView):
         else:
             raise ErrorMessage("Error saving food data to database")
 
-
         self.add_food_to_meal(user, food, meal_type, date_str, name)
 
         # before returning, add the db id to the response json
@@ -155,6 +167,7 @@ class GetFoodDetails(APIView):
         food_serializer = FoodSerializer(food)
         return Response(food_serializer.data)
 
+
 class GetMealsAndDetails(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -165,7 +178,6 @@ class GetMealsAndDetails(APIView):
         all_meals = Meal.objects.filter(user=user)
         meal_serializer = MealSerializer(all_meals, many=True)
         return Response(meal_serializer.data)
-
 
     @staticmethod
     def post(request):
@@ -244,3 +256,53 @@ class GetMealsAndDetails(APIView):
         return Response(response)
 
 
+class Apple_GetUserToken(APIView):
+    def get(self, request, *args, **kwargs):
+        user_id: str = self.kwargs.get('user_id')
+        if not user_id:
+            return Response({'message': 'Please provide a user_id'}, status=status.HTTP_400_BAD_REQUEST)
+        if User.objects.filter(username=user_id).exists():
+            user = User.objects.get(username=user_id)
+            if user.has_usable_password():
+                return Response({'message': 'User has a password. Use Sign In endpoint.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            else:
+                # Ensure user has a token
+                if not hasattr(user, 'auth_token'):
+                    return Response({'message': 'User does not have a token.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'token': user.auth_token.key}, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': 'User does not exist.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+class Apple_CreateAccount(APIView):
+    @staticmethod
+    def post(request):
+        serializer = CreateUserSerializer(data=request.data)
+        if serializer.is_valid():
+            username = serializer.validated_data['user_id']
+            email = serializer.validated_data['email']
+            first_name = serializer.validated_data.get('first_name', '')
+            last_name = serializer.validated_data.get('last_name', '')
+
+            if not User.objects.filter(username=username).exists():
+                user = User.objects.create(
+                    username=username,
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name
+                )
+                user.set_unusable_password()  # As password is not set
+                user.save()
+
+                # create token
+                Token.objects.create(user=user)
+
+                # TODO Update the UserProfile with additional information
+                # user_profile = UserProfile.objects.get(user=user)
+                # user_profile.save()
+
+                return Response({'message': 'Apple User registered successfully.'}, status=status.HTTP_201_CREATED)
+            else:
+                return Response({'error': 'Apple User already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

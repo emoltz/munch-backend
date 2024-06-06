@@ -101,3 +101,10 @@ class ConversationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conversation
         fields = '__all__'
+
+
+class CreateUserSerializer(serializers.Serializer):
+    user_id = serializers.CharField(max_length=100)
+    email = serializers.EmailField(required=True)
+    first_name = serializers.CharField(max_length=100, required=False)
+    last_name = serializers.CharField(max_length=100, required=False)
