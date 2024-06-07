@@ -1,7 +1,10 @@
+from typing import Optional
+
 from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import APIException, ParseError, NotFound
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -36,6 +39,13 @@ class UserExists(APIView):
         return Response({'exists': False}, status=status.HTTP_404_NOT_FOUND)
 
 
+class SaveFoodToDB(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        pass
+
 class LogFood(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -46,8 +56,9 @@ class LogFood(APIView):
         """
         description: str
         meal_type: str
-        date: str or None  # YYYY-MM-DD "2024-05-12"
-        name: str or None
+        date: str  # YYYY-MM-DD "2024-05-12"
+        name: Optional[str]
+        image: Optional[any]
 
     @dataclass
     class ResponseType:
@@ -103,6 +114,7 @@ class LogFood(APIView):
                 raise ErrorMessage("Invalid date format. Please use YYYY-MM-DD format.")
 
         name = request.data.get("name")
+        image = request.FILES.get("image")
 
         temperature = 0.1
 
@@ -135,6 +147,7 @@ class LogFood(APIView):
         response = json.loads(response)
         response["name"] = name if name else response["name"]
         # serialize into database
+        # TODO don't save to DB yet
 
         food_serializer = FoodSerializer(data=response)
         if food_serializer.is_valid():

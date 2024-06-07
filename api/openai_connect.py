@@ -1,7 +1,7 @@
 from enum import Enum
 import os
-from typing import List, Dict, override
-
+from typing import List, Dict, override, Optional
+import base64
 from openai import OpenAI
 from openai import OpenAIError
 from bs4 import BeautifulSoup
@@ -10,38 +10,38 @@ from dotenv import load_dotenv
 from openai.lib.streaming import AssistantEventHandler
 from openai.types.beta import Thread
 
-from api.models import Food
-
 # get api key from .env
 load_dotenv()
 open_ai_key = os.getenv("OPENAI_API_KEY")
+
 
 class OpenAIModels(Enum):
     GPT_4o = "gpt-4o"
     GPT_4 = "gpt-4"
     GPT_4_TURBO = "gpt-4-turbo"
 
+
 class EventHandler(AssistantEventHandler):
-        @override
-        def on_text_created(self, text) -> None:
-            print(f"\nassistant > {text}", end="", flush=True)
+    @override
+    def on_text_created(self, text) -> None:
+        print(f"\nassistant > {text}", end="", flush=True)
 
-        @override
-        def on_text_delta(self, delta, snapshot):
-            print(delta.value, end="", flush=True)
+    @override
+    def on_text_delta(self, delta, snapshot):
+        print(delta.value, end="", flush=True)
 
-        def on_tool_call_created(self, tool_call):
-            print(f"\nassistant > {tool_call.type}\n", flush=True)
+    def on_tool_call_created(self, tool_call):
+        print(f"\nassistant > {tool_call.type}\n", flush=True)
 
-        def on_tool_call_delta(self, delta, snapshot):
-            if delta.type == "code_interpreter":
-                if delta.code_interpreter.input:
-                    print(delta.code_interpreter.input, end="", flush=True)
-                if delta.code_interpreter.outputs:
-                    print(f"\n\noutput >", flush=True)
-                    for output in delta.code_interpreter.outputs:
-                        if output.type == "logs":
-                            print(f"\n{output.logs}", flush=True)
+    def on_tool_call_delta(self, delta, snapshot):
+        if delta.type == "code_interpreter":
+            if delta.code_interpreter.input:
+                print(delta.code_interpreter.input, end="", flush=True)
+            if delta.code_interpreter.outputs:
+                print(f"\n\noutput >", flush=True)
+                for output in delta.code_interpreter.outputs:
+                    if output.type == "logs":
+                        print(f"\n{output.logs}", flush=True)
 
 
 class OpenAIAssistant:
@@ -50,13 +50,15 @@ class OpenAIAssistant:
     OpenAI-Beta: assistants=v2
     """
 
-    def __init__(self, name: str, instructions: str, tools: List[Dict[str, str]] = None, model=OpenAIModels.GPT_4o.value, thread_id: str = None):
+    def __init__(self, name: str, instructions: str, tools: List[Dict[str, str]] = None,
+                 model=OpenAIModels.GPT_4o.value, thread_id: str = None):
         self.client = OpenAI(api_key=open_ai_key)
 
         if tools is None:
             tools = [{"type": "code_interpreter"}]
 
-        self.assistant = self.client.beta.assistants.create(name=name, instructions=instructions, tools=tools, model=model)
+        self.assistant = self.client.beta.assistants.create(name=name, instructions=instructions, tools=tools,
+                                                            model=model)
         if not thread_id:
             self.thread = self.client.beta.threads.create()
         else:
@@ -83,10 +85,10 @@ class OpenAIAssistant:
         """
         event_handler = EventHandler()
         with self.client.beta.threads.runs.stream(
-            thread_id=self.thread.id,
-            assistant_id=self.assistant.id,
-            instructions=self.instructions,
-            event_handler=event_handler,
+                thread_id=self.thread.id,
+                assistant_id=self.assistant.id,
+                instructions=self.instructions,
+                event_handler=event_handler,
         ) as stream:
             stream.until_done()
 
@@ -110,7 +112,6 @@ class OpenAIConnect:
             """
         self.json_format = json_format
 
-
         if not system_prompt:
             system_prompt = f"""
             Please respond in json format: {self.json_format}. 
@@ -124,7 +125,9 @@ class OpenAIConnect:
         self.model = model
         self.timeout = timeout
 
-    def get_response(self, prompt: str, previous_messages: list[str] = None, system_prompt: str = None) -> str or None:
+
+
+    def get_response(self, prompt: str, previous_messages: list[str] = None, system_prompt: str = None, image: bytes = None) -> str:
         if not system_prompt:
             system_prompt = self.system_prompt
 
@@ -144,6 +147,8 @@ class OpenAIConnect:
 
         # attach latest message
         messages.append({"role": "user", "content": prompt})
+
+        # TODO handle image
 
         try:
             response = self.client.chat.completions.create(
