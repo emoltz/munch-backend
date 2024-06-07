@@ -1,7 +1,6 @@
 from enum import Enum
 import os
 from typing import List, Dict, override, Optional
-import base64
 from openai import OpenAI
 from openai import OpenAIError
 from bs4 import BeautifulSoup
@@ -9,6 +8,7 @@ import requests
 from dotenv import load_dotenv
 from openai.lib.streaming import AssistantEventHandler
 from openai.types.beta import Thread
+
 
 # get api key from .env
 load_dotenv()
@@ -127,7 +127,7 @@ class OpenAIConnect:
 
 
 
-    def get_response(self, prompt: str, previous_messages: list[str] = None, system_prompt: str = None, image: bytes = None) -> str:
+    def get_response(self, prompt: str, previous_messages: list[str] = None, system_prompt: str = None, image_url: str = None) -> str:
         if not system_prompt:
             system_prompt = self.system_prompt
 
@@ -148,7 +148,8 @@ class OpenAIConnect:
         # attach latest message
         messages.append({"role": "user", "content": prompt})
 
-        # TODO handle image
+        if image_url:
+            messages.append({"role": "user", "content": f"user attached image at this url: {image_url}" })
 
         try:
             response = self.client.chat.completions.create(

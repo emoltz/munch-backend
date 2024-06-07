@@ -9,6 +9,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from dataclasses import dataclass, asdict
+
+from api.firebase_setup import upload_image_to_firebase
 from api.openai_connect import OpenAIConnect
 from api.models import MealTypes, Food, Meal, UserProfile
 import json
@@ -142,25 +144,28 @@ class LogFood(APIView):
         if meal_type.lower() not in MealTypes.values:
             raise InvalidMealType()
 
-        response = openai_connect.get_response(description)
+        if image:
+            image_url = upload_image_to_firebase(image)
+            response = openai_connect.get_response(description, image_url=image_url)
+        else:
+            response = openai_connect.get_response(description)
 
         response = json.loads(response)
         response["name"] = name if name else response["name"]
+
         # serialize into database
-        # TODO don't save to DB yet
-
-        food_serializer = FoodSerializer(data=response)
-        if food_serializer.is_valid():
-            food = food_serializer.save()
-            food.initial_description = description
-            food.save()
-        else:
-            raise ErrorMessage("Error saving food data to database")
-
-        self.add_food_to_meal(user, food, meal_type, date_str, name)
-
-        # before returning, add the db id to the response json
-        response["db_id"] = food.id
+        # food_serializer = FoodSerializer(data=response)
+        # if food_serializer.is_valid():
+        #     food = food_serializer.save()
+        #     food.initial_description = description
+        #     food.save()
+        # else:
+        #     raise ErrorMessage("Error saving food data to database")
+        #
+        # self.add_food_to_meal(user, food, meal_type, date_str, name)
+        #
+        # # before returning, add the db id to the response json
+        # response["db_id"] = food.id
 
         return Response(response)
 
