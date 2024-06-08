@@ -136,7 +136,7 @@ class LogFood(APIView):
             Because we can't be exact in our estimates, we are providing a minimum and maximum range for each property. 
             The goal is for these values to be as close as possible, but accuracy is the most important, so don't worry too much about the range.
             In order to maximize the accuracy of the estimates, subtract 10% from the minimum and add 10% to the maximum.
-            Use these properties: {Food.all_properties()}
+            Use these properties: {Food.properties_to_calculate()}
             """
         openai_connect = OpenAIConnect(system_prompt=system_prompt, temperature=temperature, json_format=json_format)
 
@@ -144,16 +144,25 @@ class LogFood(APIView):
         if meal_type.lower() not in MealTypes.values:
             raise InvalidMealType()
 
+        image_url: Optional[str] = None
         if image:
             image_url = upload_image_to_firebase(image)
+
             response = openai_connect.get_response(description, image_url=image_url)
         else:
             response = openai_connect.get_response(description)
 
         response = json.loads(response)
+
+        # add extra properties
+        if image_url:
+            response["image_url"] = image_url
+
         response["name"] = name if name else response["name"]
 
         # serialize into database
+        response["archived"] = True
+
         food_serializer = FoodSerializer(data=response)
         if food_serializer.is_valid():
             food = food_serializer.save()
