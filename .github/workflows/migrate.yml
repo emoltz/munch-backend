@@ -1,0 +1,40 @@
+name: Wait for Deploy and Migrate
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Heroku and Run Migrations
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Deploy to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          git remote add heroku https://git.heroku.com/${{ secrets.HEROKU_APP_NAME }}.git
+          git push heroku main
+
+      - name: Wait for deployment
+        run: |
+          until [[ $(curl -s https://api.heroku.com/apps/${{ secrets.HEROKU_APP_NAME }}/releases \
+                    -H "Accept: application/vnd.heroku+json; version=3" \
+                    -H "Authorization: Bearer ${{ secrets.HEROKU_API_KEY }}" \
+                    | jq -r '.[-1].status') == "succeeded" ]]; do
+            echo "Waiting for deployment to complete..."
+            sleep 10
+          done
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+
+      - name: Run Migrations on Heroku
+        run: |
+          heroku run python manage.py migrate --app ${{ secrets.HEROKU_APP_NAME }}
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}

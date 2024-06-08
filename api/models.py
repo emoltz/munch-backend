@@ -28,6 +28,8 @@ class Food(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, default="")
     initial_description = models.TextField(blank=True, null=True)
+    archived = models.BooleanField(default=False)
+    image_url = models.URLField(blank=True, null=True)
     # the system with nutritional info is on a *range* of values, so we need to store the min and max values
     # all values are in grams
     calories_min = models.FloatField(default=0)
@@ -61,9 +63,9 @@ class Food(models.Model):
     # caffeine_max = models.FloatField(default=0)
 
     @staticmethod
-    def all_properties() -> list[str]:
+    def properties_to_calculate() -> list[str]:
         list_of_fields = [field.name for field in Food._meta.get_fields()]
-        for field in ["id", "name", "meal"]:
+        for field in ["id", "name", "meal", "archived", "image_url"]:
             list_of_fields.remove(field)
         return list_of_fields
 
