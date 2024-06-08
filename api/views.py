@@ -154,18 +154,18 @@ class LogFood(APIView):
         response["name"] = name if name else response["name"]
 
         # serialize into database
-        # food_serializer = FoodSerializer(data=response)
-        # if food_serializer.is_valid():
-        #     food = food_serializer.save()
-        #     food.initial_description = description
-        #     food.save()
-        # else:
-        #     raise ErrorMessage("Error saving food data to database")
-        #
-        # self.add_food_to_meal(user, food, meal_type, date_str, name)
-        #
-        # # before returning, add the db id to the response json
-        # response["db_id"] = food.id
+        food_serializer = FoodSerializer(data=response)
+        if food_serializer.is_valid():
+            food = food_serializer.save()
+            food.initial_description = description
+            food.save()
+        else:
+            raise ErrorMessage("Error saving food data to database")
+
+        self.add_food_to_meal(user, food, meal_type, date_str, name)
+
+        # before returning, add the db id to the response json
+        response["id"] = food.id
 
         return Response(response)
 
