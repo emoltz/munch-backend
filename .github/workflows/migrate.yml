@@ -1,4 +1,4 @@
-name: Wait for Deploy and Migrate
+name: Deploy and Migrate
 
 on:
   push:
@@ -14,12 +14,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Deploy to Heroku
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install.sh | sh
+
+      - name: Authenticate with Heroku
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
         run: |
-          git remote add heroku https://git.heroku.com/${{ secrets.HEROKU_APP_NAME }}.git
-          git push heroku main
+          echo "machine api.heroku.com" > ~/.netrc
+          echo "  login ${{ secrets.HEROKU_EMAIL }}" >> ~/.netrc
+          echo "  password ${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
+          echo "machine git.heroku.com" >> ~/.netrc
+          echo "  login ${{ secrets.HEROKU_EMAIL }}" >> ~/.netrc
+          echo "  password ${{ secrets.HEROKU_API_KEY }}" >> ~/.netrc
+          chmod 600 ~/.netrc
+          heroku git:remote -a ${{ secrets.HEROKU_APP_NAME }}
+
+      - name: Deploy to Heroku
+        run: git push heroku main
 
       - name: Wait for deployment
         run: |
@@ -34,7 +47,6 @@ jobs:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
 
       - name: Run Migrations on Heroku
-        run: |
-          heroku run python manage.py migrate --app ${{ secrets.HEROKU_APP_NAME }}
+        run: heroku run python manage.py migrate --app ${{ secrets.HEROKU_APP_NAME }}
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
