@@ -1,11 +1,16 @@
+from typing import Optional
+
 from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import APIException, ParseError, NotFound
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from dataclasses import dataclass, asdict
+
+from api.firebase_setup import upload_image_to_firebase
 from api.openai_connect import OpenAIConnect
 from api.models import MealTypes, Food, Meal, UserProfile
 import json
@@ -36,6 +41,13 @@ class UserExists(APIView):
         return Response({'exists': False}, status=status.HTTP_404_NOT_FOUND)
 
 
+class SaveFoodToDB(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        pass
+
 class LogFood(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -46,8 +58,9 @@ class LogFood(APIView):
         """
         description: str
         meal_type: str
-        date: str or None  # YYYY-MM-DD "2024-05-12"
-        name: str or None
+        date: str  # YYYY-MM-DD "2024-05-12"
+        name: Optional[str]
+        image: Optional[any]
 
     @dataclass
     class ResponseType:
@@ -103,6 +116,7 @@ class LogFood(APIView):
                 raise ErrorMessage("Invalid date format. Please use YYYY-MM-DD format.")
 
         name = request.data.get("name")
+        image = request.FILES.get("image")
 
         temperature = 0.1
 
@@ -130,24 +144,28 @@ class LogFood(APIView):
         if meal_type.lower() not in MealTypes.values:
             raise InvalidMealType()
 
-        response = openai_connect.get_response(description)
+        if image:
+            image_url = upload_image_to_firebase(image)
+            response = openai_connect.get_response(description, image_url=image_url)
+        else:
+            response = openai_connect.get_response(description)
 
         response = json.loads(response)
         response["name"] = name if name else response["name"]
+
         # serialize into database
-
-        food_serializer = FoodSerializer(data=response)
-        if food_serializer.is_valid():
-            food = food_serializer.save()
-            food.initial_description = description
-            food.save()
-        else:
-            raise ErrorMessage("Error saving food data to database")
-
-        self.add_food_to_meal(user, food, meal_type, date_str, name)
-
-        # before returning, add the db id to the response json
-        response["db_id"] = food.id
+        # food_serializer = FoodSerializer(data=response)
+        # if food_serializer.is_valid():
+        #     food = food_serializer.save()
+        #     food.initial_description = description
+        #     food.save()
+        # else:
+        #     raise ErrorMessage("Error saving food data to database")
+        #
+        # self.add_food_to_meal(user, food, meal_type, date_str, name)
+        #
+        # # before returning, add the db id to the response json
+        # response["db_id"] = food.id
 
         return Response(response)
 
