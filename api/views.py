@@ -40,13 +40,21 @@ class UserExists(APIView):
             return Response({'exists': True}, status=status.HTTP_200_OK)
         return Response({'exists': False}, status=status.HTTP_404_NOT_FOUND)
 
-
-class SaveFoodToDB(APIView):
+class SaveFood(APIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
 
-    def post(self, request):
-        pass
+    def get(self, request, *args, **kwargs):
+        food_id: str = self.kwargs.get('id')
+        if not food_id:
+            raise ParseError(detail="ID not provided")
+        try:
+            food = Food.objects.get(id=food_id)
+            food.archived = False
+            food.save()
+        except Food.DoesNotExist:
+            raise NotFound(detail="Food item not found")
+        return Response({'message': 'Food item saved successfully.'}, status=status.HTTP_200_OK)
+
 
 class LogFood(APIView):
     permission_classes = [IsAuthenticated]
