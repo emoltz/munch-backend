@@ -124,7 +124,7 @@ class LogFood(APIView):
                 raise ErrorMessage("Invalid date format. Please use YYYY-MM-DD format.")
 
         name = request.data.get("name")
-        image = request.FILES.get("image")
+        image = request.FILES.get("image") # TODO you have to either change this to a form accepted thingy or get the decoded data from the frontend? Or use a url?
 
         temperature = 0.1
 
