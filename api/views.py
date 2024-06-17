@@ -1,5 +1,6 @@
 from typing import Optional
 
+import requests
 from django.contrib.auth.models import User
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -33,12 +34,13 @@ class ErrorMessage(APIException):
 
 class UserExists(APIView):
     def get(self, request, *args, **kwargs):
+        print("Checking if user exists...")
         user_id: str = self.kwargs.get('user_id')
         if not user_id:
             return Response({'message': 'Please provide a user_id'}, status=status.HTTP_400_BAD_REQUEST)
         if User.objects.filter(username=user_id).exists():
             return Response({'exists': True}, status=status.HTTP_200_OK)
-        return Response({'exists': False}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'exists': False}, status=status.HTTP_200_OK)
 
 class SaveFood(APIView):
     permission_classes = [IsAuthenticated]
@@ -59,54 +61,22 @@ class SaveFood(APIView):
 class LogFood(APIView):
     permission_classes = [IsAuthenticated]
 
-    @dataclass
-    class RequestType:
-        """
-        For reference only. Not used in the code.
-        """
-        description: str
-        meal_type: str
-        date: str  # YYYY-MM-DD "2024-05-12"
-        name: Optional[str]
-        image: Optional[any]
-
-    @dataclass
-    class ResponseType:
-        """
-        For reference only. Not used in the code.
-        """
-        response: str
-        follow_up: str
-        meal_name: str
-        calories_min: float
-        calories_max: float
-        protein_min: float
-        protein_max: float
-        total_fat_min: float
-        total_fat_max: float
-        saturated_fat_min: float
-        saturated_fat_max: float
-        carbohydrates_min: float
-        carbohydrates_max: float
-        sugar_min: float
-        sugar_max: float
-        fiber_min: float
-        fiber_max: float
-        cholesterol_min: float
-        cholesterol_max: float
-        sodium_grams_min: float
-        sodium_grams_max: float
-
     @staticmethod
     def add_food_to_meal(user, food: Food, meal_type: str, date: str, meal_name=None) -> Meal:
         meal, created = Meal.objects.get_or_create(meal_type=meal_type, date=date, user=user)
         meal.meal_items.add(food)
         if meal_name:
             meal.name = meal_name
+
+        if not meal.description:
+            meal.description = food.initial_description
+        else:
+            meal.description += " " + food.initial_description
         meal.save()
         return meal
 
     def post(self, request):
+        print("getting response from OpenAI...")
         user = request.user
         description = request.data.get("description")
         meal_type = request.data.get("meal_type")
@@ -124,7 +94,7 @@ class LogFood(APIView):
                 raise ErrorMessage("Invalid date format. Please use YYYY-MM-DD format.")
 
         name = request.data.get("name")
-        image = request.FILES.get("image")
+        image = request.FILES.get("image") # TODO you have to either change this to a form accepted thingy or get the decoded data from the frontend? Or use a url?
 
         temperature = 0.1
 
@@ -162,14 +132,15 @@ class LogFood(APIView):
 
         response = json.loads(response)
 
+
+
+        # serialize into database
         # add extra properties
         if image_url:
             response["image_url"] = image_url
-
         response["name"] = name if name else response["name"]
-
-        # serialize into database
         response["archived"] = True
+        response["user"] = user.id
 
         food_serializer = FoodSerializer(data=response)
         if food_serializer.is_valid():
@@ -177,6 +148,7 @@ class LogFood(APIView):
             food.initial_description = description
             food.save()
         else:
+            print(food_serializer.errors)
             raise ErrorMessage("Error saving food data to database")
 
         self.add_food_to_meal(user, food, meal_type, date_str, name)
@@ -185,6 +157,28 @@ class LogFood(APIView):
         response["id"] = food.id
 
         return Response(response)
+
+
+class GetFoods(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @staticmethod
+    def get(request):
+        user = request.user
+        all_foods = Food.objects.filter(user=user)
+        food_serializer = FoodSerializer(all_foods, many=True)
+        return Response(food_serializer.data)
+
+
+    @staticmethod
+    def post(request):
+        user = request.user
+        ids_arr: list[str] = request.data.get("ids")
+        if not ids_arr:
+            raise ErrorMessage("Please provide an array of ids")
+        foods = Food.objects.filter(id__in=ids_arr)
+        food_serializer = FoodSerializer(foods, many=True)
+        return Response(food_serializer.data)
 
 
 class GetFoodDetails(APIView):
@@ -313,6 +307,7 @@ class Apple_GetUserToken(APIView):
 class Apple_CreateAccount(APIView):
     @staticmethod
     def post(request):
+        print("Creating Apple User...")
         serializer = CreateUserSerializer(data=request.data)
         if serializer.is_valid():
             username = serializer.validated_data['user_id']
@@ -341,3 +336,43 @@ class Apple_CreateAccount(APIView):
             else:
                 return Response({'error': 'Apple User already exists.'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class VerifyAppleToken(APIView):
+    def post(self, request, *args, **kwargs):
+        user_id = request.data.get('user_id')
+        identity_token = request.data.get('identity_token')
+
+        if not user_id or not identity_token:
+            return Response({'message': 'Missing user_id or identity_token'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Validate the token with Apple
+        client_id = "YOUR_CLIENT_ID"
+        client_secret = "YOUR_CLIENT_SECRET"
+
+        response = requests.post(
+            'https://appleid.apple.com/auth/token',
+            data={
+                'client_id': client_id,
+                'client_secret': client_secret,
+                'code': identity_token,
+                'grant_type': 'authorization_code',
+            }
+        )
+
+        if response.status_code != 200:
+            return Response({'message': 'Invalid token'}, status=response.status_code)
+
+        response_data = response.json()
+        # TODO: finish this
+
+        # Check if the user exists in the database
+        try:
+            user = User.objects.get(username=user_id)
+        except User.DoesNotExist:
+            return Response({'message': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Ensure the user has a token
+        if not hasattr(user, 'auth_token'):
+            Token.objects.create(user=user)
+
+        return Response({'token': user.auth_token.key}, status=status.HTTP_200_OK)

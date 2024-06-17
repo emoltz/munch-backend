@@ -2,7 +2,7 @@ from django.urls import path
 from rest_framework.authtoken.views import obtain_auth_token
 
 from api.views import LogFood, GetMealsAndDetails, GetFoodDetails, Apple_CreateAccount, UserExists, \
-    Apple_GetUserToken, SaveFood
+    Apple_GetUserToken, SaveFood, GetFoods
 
 urlpatterns = [
     path('get-reg-user-token/', obtain_auth_token, name="api_token_auth"),
@@ -13,4 +13,5 @@ urlpatterns = [
     path('save-food/<str:id>', SaveFood.as_view(), name='save_food'),
     path('meals/', GetMealsAndDetails.as_view(), name='get_meal_info'),
     path('food/<str:id>/', GetFoodDetails.as_view(), name='get_food_details'),
+    path('get-foods/', GetFoods.as_view(), name='get_foods_from_ids')
 ]

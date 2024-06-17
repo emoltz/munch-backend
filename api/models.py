@@ -27,7 +27,10 @@ class Food(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, default="")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=False, blank=False)
     initial_description = models.TextField(blank=True, null=True)
+    response = models.TextField(blank=True, null=True)
+    follow_up = models.TextField(blank=True, null=True)
     archived = models.BooleanField(default=False)
     image_url = models.URLField(blank=True, null=True)
     # the system with nutritional info is on a *range* of values, so we need to store the min and max values
