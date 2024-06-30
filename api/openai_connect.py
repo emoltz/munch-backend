@@ -1,4 +1,5 @@
 import base64
+import uuid
 from enum import Enum
 import os
 from io import BytesIO
@@ -137,6 +138,10 @@ class OpenAIConnect:
         img_data = base64.b64decode(base64_str)
         return BytesIO(img_data)
 
+    @staticmethod
+    def generate_image_filename() -> str:
+        return uuid.uuid4().hex + ".png"
+
     def get_response(self, prompt: str, previous_messages: list[str] = None, system_prompt: str = None,
                      base64_image: str = None) -> str:
         if not system_prompt:
@@ -161,7 +166,7 @@ class OpenAIConnect:
         if base64_image:
             # image included
             bytesIO = self.decode_base64_image(base64_image)
-            firebase_image_url = upload_image_to_firebase(bytesIO, "image.png")
+            firebase_image_url = upload_image_to_firebase(bytesIO, self.generate_image_filename())
             print("firebase_image_url: ", firebase_image_url)
             self.image_url = firebase_image_url
             messages.append(

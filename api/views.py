@@ -201,8 +201,11 @@ class GetMealsAndDetails(APIView):
     def get(request):
         # return Meal[] serialized
         user = request.user
-        all_meals = Meal.objects.filter(user=user)
+        # make sure date is descending
+        all_meals = Meal.objects.filter(user=user, date__lte=datetime.now()).order_by('-date')
+
         meal_serializer = MealSerializer(all_meals, many=True)
+
         return Response(meal_serializer.data)
 
     @staticmethod
