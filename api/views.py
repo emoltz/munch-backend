@@ -76,7 +76,6 @@ class LogFood(APIView):
         return meal
 
     def post(self, request):
-        print("getting response from OpenAI...")
         user = request.user
         description = request.data.get("description")
         meal_type = request.data.get("meal_type")
@@ -94,7 +93,8 @@ class LogFood(APIView):
                 raise ErrorMessage("Invalid date format. Please use YYYY-MM-DD format.")
 
         name = request.data.get("name")
-        image = request.FILES.get("image") # TODO you have to either change this to a form accepted thingy or get the decoded data from the frontend? Or use a url?
+        image = request.data.get("image", None)
+
 
         temperature = 0.1
 
@@ -122,11 +122,8 @@ class LogFood(APIView):
         if meal_type.lower() not in MealTypes.values:
             raise InvalidMealType()
 
-        image_url: Optional[str] = None
         if image:
-            image_url = upload_image_to_firebase(image)
-
-            response = openai_connect.get_response(description, image_url=image_url)
+            response = openai_connect.get_response(description, base64_image=image)
         else:
             response = openai_connect.get_response(description)
 
@@ -136,8 +133,8 @@ class LogFood(APIView):
 
         # serialize into database
         # add extra properties
-        if image_url:
-            response["image_url"] = image_url
+        if image:
+            response["image_url"] = openai_connect.image_url
         response["name"] = name if name else response["name"]
         response["archived"] = True
         response["user"] = user.id

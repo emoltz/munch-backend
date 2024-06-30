@@ -1,3 +1,5 @@
+from io import BytesIO
+
 import firebase_admin
 from firebase_admin import credentials, storage
 import json
@@ -20,11 +22,11 @@ firebase_admin.initialize_app(cred, {
     'storageBucket': 'munch-f2d84.appspot.com'
 })
 
-def upload_image_to_firebase(image_file):
+def upload_image_to_firebase(image_file: BytesIO, filename: str) -> str:
     # Get the default bucket
     bucket = storage.bucket()
     # Create a new blob and upload the file's content
-    blob = bucket.blob(image_file.name)
+    blob = bucket.blob(filename)
     blob.upload_from_file(image_file)
     # Make the blob publicly viewable
     blob.make_public()
