@@ -1,5 +1,8 @@
+import base64
+import uuid
 from enum import Enum
 import os
+from io import BytesIO
 from typing import List, Dict, override, Optional
 from openai import OpenAI
 from openai import OpenAIError
@@ -9,6 +12,7 @@ from dotenv import load_dotenv
 from openai.lib.streaming import AssistantEventHandler
 from openai.types.beta import Thread
 
+from api.firebase_setup import upload_image_to_firebase
 
 # get api key from .env
 load_dotenv()
@@ -124,10 +128,22 @@ class OpenAIConnect:
         self.max_tokens = max_tokens
         self.model = model
         self.timeout = timeout
+        self.image_url = None
 
+    @staticmethod
+    def decode_base64_image(base64_str: str) -> BytesIO:
+        """
+        Decode a base64 string into a BytesIO object
+        """
+        img_data = base64.b64decode(base64_str)
+        return BytesIO(img_data)
 
+    @staticmethod
+    def generate_image_filename() -> str:
+        return uuid.uuid4().hex + ".png"
 
-    def get_response(self, prompt: str, previous_messages: list[str] = None, system_prompt: str = None, image_url: str = None) -> str:
+    def get_response(self, prompt: str, previous_messages: list[str] = None, system_prompt: str = None,
+                     base64_image: str = None) -> str:
         if not system_prompt:
             system_prompt = self.system_prompt
 
@@ -147,9 +163,26 @@ class OpenAIConnect:
 
         # attach latest message
         messages.append({"role": "user", "content": prompt})
-
-        if image_url:
-            messages.append({"role": "user", "content": f"user attached image at this url: {image_url}" })
+        if base64_image:
+            # image included
+            bytesIO = self.decode_base64_image(base64_image)
+            firebase_image_url = upload_image_to_firebase(bytesIO, self.generate_image_filename())
+            print("firebase_image_url: ", firebase_image_url)
+            self.image_url = firebase_image_url
+            messages.append(
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "This is the provided image. Carefully break down each item in the image before providing nutritional information."},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": firebase_image_url,
+                            },
+                        }
+                    ]
+                }
+            )
 
         try:
             response = self.client.chat.completions.create(
