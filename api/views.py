@@ -1,5 +1,4 @@
 from typing import Optional
-
 import requests
 from django.contrib.auth.models import User
 from rest_framework import status
@@ -19,28 +18,6 @@ from datetime import datetime
 
 from api.serializers import FoodSerializer, MealSerializer, CreateUserSerializer
 
-
-class InvalidMealType(APIException):
-    status_code = 400
-    default_detail = "Invalid meal type"
-    default_code = 'invalid_meal_type'
-
-
-class ErrorMessage(APIException):
-    status_code = 400
-    default_detail = "Error processing request."
-    default_code = 'error'
-
-
-class UserExists(APIView):
-    def get(self, request, *args, **kwargs):
-        print("Checking if user exists...")
-        user_id: str = self.kwargs.get('user_id')
-        if not user_id:
-            return Response({'message': 'Please provide a user_id'}, status=status.HTTP_400_BAD_REQUEST)
-        if User.objects.filter(username=user_id).exists():
-            return Response({'exists': True}, status=status.HTTP_200_OK)
-        return Response({'exists': False}, status=status.HTTP_200_OK)
 
 class SaveFood(APIView):
     permission_classes = [IsAuthenticated]
@@ -95,7 +72,6 @@ class LogFood(APIView):
         name = request.data.get("name")
         image = request.data.get("image", None)
 
-
         temperature = 0.1
 
         json_format = """
@@ -128,8 +104,6 @@ class LogFood(APIView):
             response = openai_connect.get_response(description)
 
         response = json.loads(response)
-
-
 
         # serialize into database
         # add extra properties
@@ -165,7 +139,6 @@ class GetFoods(APIView):
         all_foods = Food.objects.filter(user=user)
         food_serializer = FoodSerializer(all_foods, many=True)
         return Response(food_serializer.data)
-
 
     @staticmethod
     def post(request):
@@ -304,6 +277,20 @@ class Apple_GetUserToken(APIView):
             return Response({'message': 'User does not exist.'}, status=status.HTTP_404_NOT_FOUND)
 
 
+
+# AUTH
+class UserExists(APIView):
+    def get(self, request, *args, **kwargs):
+        print("Checking if user exists...")
+        user_id: str = self.kwargs.get('user_id')
+        if not user_id:
+            return Response({'message': 'Please provide a user_id'}, status=status.HTTP_400_BAD_REQUEST)
+        if User.objects.filter(username=user_id).exists():
+            return Response({'exists': True}, status=status.HTTP_200_OK)
+        return Response({'exists': False}, status=status.HTTP_200_OK)
+
+
+
 class Apple_CreateAccount(APIView):
     @staticmethod
     def post(request):
@@ -336,6 +323,7 @@ class Apple_CreateAccount(APIView):
             else:
                 return Response({'error': 'Apple User already exists.'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class VerifyAppleToken(APIView):
     def post(self, request, *args, **kwargs):
@@ -376,3 +364,15 @@ class VerifyAppleToken(APIView):
             Token.objects.create(user=user)
 
         return Response({'token': user.auth_token.key}, status=status.HTTP_200_OK)
+
+
+class InvalidMealType(APIException):
+    status_code = 400
+    default_detail = "Invalid meal type"
+    default_code = 'invalid_meal_type'
+
+
+class ErrorMessage(APIException):
+    status_code = 400
+    default_detail = "Error processing request."
+    default_code = 'error'
